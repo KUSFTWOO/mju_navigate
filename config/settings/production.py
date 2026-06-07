@@ -1,6 +1,4 @@
 import os
-import sentry_sdk
-from sentry_sdk.integrations.django import DjangoIntegration
 
 from .base import *  # noqa: F401, F403
 
@@ -30,15 +28,20 @@ CSRF_COOKIE_SECURE = True
 X_FRAME_OPTIONS = 'DENY'
 
 # ── SENTRY ─────────────────────────────────────────────────────
-# sentry_sdk는 Django 앱이 아니므로 INSTALLED_APPS에 추가하지 않음
+# sentry-sdk가 설치되어 있고 DSN이 설정된 경우에만 초기화
 _sentry_dsn = os.environ.get('SENTRY_DSN', '')
 if _sentry_dsn:
-    sentry_sdk.init(
-        dsn=_sentry_dsn,
-        integrations=[DjangoIntegration()],
-        traces_sample_rate=0.1,
-        send_default_pii=False,
-    )
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.django import DjangoIntegration
+        sentry_sdk.init(
+            dsn=_sentry_dsn,
+            integrations=[DjangoIntegration()],
+            traces_sample_rate=0.1,
+            send_default_pii=False,
+        )
+    except ImportError:
+        pass  # sentry-sdk 미설치 시 무시
 
 # ── LOGGING ────────────────────────────────────────────────────
 LOGGING = {
