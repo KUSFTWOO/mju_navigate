@@ -1,0 +1,253 @@
+{% load navigation_extras %}
+
+<!-- 셔틀버스 정보 -->
+{% if shuttle_info %}
+<div class="bg-gradient-to-r from-shuttle to-shuttle-light border-2 border-shuttle rounded-lg p-4 mb-4">
+  <h3 class="font-bold text-shuttle mb-3">🚌 셔틀버스 옵션</h3>
+  <div class="space-y-2">
+    {% for shuttle in shuttle_info %}
+    <div class="bg-white rounded p-3">
+      <p class="font-semibold text-gray-900">{{ shuttle.name }}</p>
+      <p class="text-sm text-gray-600">{{ shuttle.from }} → {{ shuttle.to }}</p>
+      <p class="text-lg font-bold text-shuttle mt-1">다음 출발: {{ shuttle.depart_time }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- 대중교통 경로 -->
+<div class="mb-4">
+  <div class="flex items-center justify-between mb-3">
+    <h3 class="font-bold text-gray-900">🚇 대중교통 경로</h3>
+  </div>
+
+  <!-- 정렬 버튼 -->
+  {% if routes %}
+  <div class="flex gap-2 mb-4">
+    <button
+      class="sort-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+      data-sort="time"
+      onclick="sortRoutes('time')"
+    >
+      ⏱ 최소 시간
+    </button>
+    <button
+      class="sort-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+      data-sort="walk"
+      onclick="sortRoutes('walk')"
+    >
+      🚶 최소 도보
+    </button>
+    <button
+      class="sort-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+      data-sort="transfer"
+      onclick="sortRoutes('transfer')"
+    >
+      🔄 최소 환승
+    </button>
+  </div>
+  {% endif %}
+</div>
+
+{% if routes %}
+  <!-- 경로 목록 -->
+  <div id="route-list" class="space-y-3 max-h-96 overflow-y-auto">
+    {% for route in routes %}
+    <div class="route-card bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all cursor-pointer"
+         data-route-index="{{ route.index }}"
+         data-total-time="{{ route.totalTime|default:999 }}"
+         data-total-walk="{{ route.totalWalk|default:999 }}"
+         data-transfer-count="{{ route.busTransitCount|add:route.subwayTransitCount|default:0 }}"
+         x-data="{ expanded: false }"
+         @click="selectRoute({{ route.index }}); expanded = !expanded">
+
+      <!-- 카드 헤더 (항상 표시) -->
+      <div class="p-4">
+        <!-- 셔틀 포함 배지 (필요시) -->
+        {% if shuttle_info %}
+        <span class="inline-block mb-2 bg-shuttle-light text-shuttle text-xs font-bold px-2 py-0.5 rounded">
+          🚌 셔틀 포함
+        </span>
+        {% endif %}
+
+        <!-- 경로 요약 (한 줄) -->
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex gap-3 sm:gap-4 text-xs sm:text-sm flex-wrap">
+            <div class="flex items-center gap-1">
+              <span>⏱</span>
+              <span class="font-semibold text-gray-900">{{ route.totalTime|minutes_to_hhmm }}</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <span>🚶</span>
+              <span class="font-semibold text-gray-900">{% if route.totalWalk %}{{ route.totalWalk|floatformat:0 }}m{% else %}—{% endif %}</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <span>🔄</span>
+              <span class="font-semibold text-gray-900">{{ route.busTransitCount|add:route.subwayTransitCount|default:0 }}회</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <span>💰</span>
+              <span class="font-semibold text-gray-900">{% if route.fare %}{{ route.fare }}원{% else %}—{% endif %}</span>
+            </div>
+          </div>
+          <span class="text-gray-400 text-xs" @click="$event.stopPropagation()">
+            <span x-show="!expanded">▼</span>
+            <span x-show="expanded">▲</span>
+          </span>
+        </div>
+
+        <!-- 교통수단 흐름 (아이콘) -->
+        <div class="flex items-center gap-2 text-sm">
+          {% for subpath in route.subPath %}
+            {% if subpath.trafficType == 1 %}
+              <span>🚇</span>
+            {% elif subpath.trafficType == 2 %}
+              <span>🚌</span>
+            {% elif subpath.trafficType == 3 %}
+              <span>🚶</span>
+            {% endif %}
+            {% if not forloop.last %}
+              <span class="text-gray-300">→</span>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- 상세 경로 정보 (펼침/접힘) -->
+      <div x-show="expanded" x-transition:all.duration.200ms class="border-t border-gray-200 bg-gray-50">
+        <div class="p-4 space-y-4">
+          <!-- 출발지 -->
+          <div class="flex items-start gap-3 text-sm">
+            <span class="text-lg">📍</span>
+            <div class="flex-1">
+              <p class="font-semibold text-gray-900">출발지</p>
+              <p class="text-gray-600">{% if route.subPath.0.startName %}{{ route.subPath.0.startName }}{% endif %}</p>
+            </div>
+          </div>
+
+          <!-- 각 구간 (subPath) — 도보(trafficType=3) 제외, 대중교통만 표시 -->
+          {% for subpath in route.subPath %}
+          {% if subpath.trafficType != 3 %}
+          <div class="flex gap-0">
+            <!-- 구간 색상 라인 -->
+            <div class="w-1 bg-gray-300" style="background-color: {{ subpath|get_polyline_color }}"></div>
+
+            <!-- 구간 정보 -->
+            <div class="flex-1 pl-3">
+              <!-- 교통수단별 정보 -->
+              {% if subpath.trafficType == 1 %}
+                <!-- 지하철 -->
+                {% with lc=subpath.name|get_subway_color %}
+                <div class="text-sm">
+                  <div class="font-semibold text-gray-900 mb-1">
+                    🚇
+                    {% if subpath.name %}
+                      <span style="display:inline-block;padding:0.125rem 0.5rem;background-color:{{ lc }}1A;color:{{ lc }};border-radius:0.25rem;font-size:0.75rem;font-weight:600;margin-right:0.25rem;">{{ subpath.name }}</span>
+                    {% else %}지하철{% endif %}
+                    <span class="font-normal text-gray-600">{{ subpath.sectionTime|default:'—' }}분</span>
+                  </div>
+                  <p class="text-xs text-gray-600">{{ subpath.startName }} → {{ subpath.endName }}</p>
+                  {% if subpath.stationCount %}
+                  <p class="text-xs text-gray-500 mt-1">{{ subpath.stationCount }}정거장</p>
+                  {% endif %}
+                </div>
+                {% endwith %}
+
+              {% elif subpath.trafficType == 2 %}
+                <!-- 버스 -->
+                {% with bc=subpath|get_polyline_color %}
+                <div class="text-sm">
+                  <div class="font-semibold text-gray-900 mb-1">
+                    🚌
+                    {% if subpath.lanes %}
+                      {% for lane in subpath.lanes %}
+                        <span style="display:inline-block;padding:0.125rem 0.5rem;background-color:{{ bc }}1A;color:{{ bc }};border-radius:0.25rem;font-size:0.75rem;font-weight:600;margin-right:0.25rem;">{{ lane }}번</span>
+                      {% endfor %}
+                    {% else %}버스{% endif %}
+                    <span class="font-normal text-gray-600">{{ subpath.sectionTime|default:'—' }}분</span>
+                  </div>
+                  <p class="text-xs text-gray-600">{{ subpath.startName }} → {{ subpath.endName }}</p>
+                  <p class="text-xs text-gray-500 mt-1">{{ subpath.distance|floatformat:0 }}m</p>
+                </div>
+                {% endwith %}
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+          {% endfor %}
+
+          <!-- 도착지 -->
+          <div class="flex items-start gap-3 text-sm">
+            <span class="text-lg">📍</span>
+            <div class="flex-1">
+              <p class="font-semibold text-gray-900">도착지</p>
+              {% with last_subpath=route.subPath|last %}
+              <p class="text-gray-600">{{ last_subpath.endName|default:"목적지" }}</p>
+              {% endwith %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+  </div>
+{% else %}
+  <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+    <p class="text-yellow-800 text-sm">검색 결과가 없습니다.</p>
+  </div>
+{% endif %}
+
+<script>
+// 정렬 버튼 스타일 초기화
+(function initSortButtons() {
+  const buttons = document.querySelectorAll('.sort-btn');
+  buttons.forEach(btn => {
+    btn.classList.add('bg-white', 'border', 'border-gray-300', 'text-gray-700');
+  });
+  // 기본 정렬 (최소 시간)
+  const timeBtn = document.querySelector('[data-sort="time"]');
+  if (timeBtn) {
+    timeBtn.classList.remove('bg-white', 'border-gray-300', 'text-gray-700');
+    timeBtn.classList.add('bg-brand-500', 'text-white');
+  }
+})();
+
+// 경로 정렬
+function sortRoutes(sortBy) {
+  const routeList = document.getElementById('route-list');
+  if (!routeList) return;
+
+  // 버튼 스타일 업데이트
+  document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.classList.remove('bg-brand-500', 'text-white');
+    btn.classList.add('bg-white', 'border-gray-300', 'text-gray-700');
+  });
+  document.querySelector(`[data-sort="${sortBy}"]`).classList.remove('bg-white', 'border-gray-300', 'text-gray-700');
+  document.querySelector(`[data-sort="${sortBy}"]`).classList.add('bg-brand-500', 'text-white');
+
+  // 카드 정렬
+  const cards = Array.from(document.querySelectorAll('.route-card'));
+
+  cards.sort((a, b) => {
+    switch (sortBy) {
+      case 'time':
+        return parseFloat(a.dataset.totalTime) - parseFloat(b.dataset.totalTime);
+      case 'walk':
+        return parseFloat(a.dataset.totalWalk) - parseFloat(b.dataset.totalWalk);
+      case 'transfer':
+        return parseFloat(a.dataset.transferCount) - parseFloat(b.dataset.transferCount);
+      default:
+        return 0;
+    }
+  });
+
+  // DOM 재정렬
+  routeList.innerHTML = '';
+  cards.forEach(card => {
+    routeList.appendChild(card);
+  });
+
+  console.log(`✓ 경로 정렬: ${sortBy}`);
+}
+</script>

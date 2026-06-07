@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}프로필 — MJU Navigate{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <!-- 프로필 헤더 -->
+  <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">{{ user.email }}</h1>
+        <p class="text-gray-600 text-sm mt-1">닉네임: {{ profile.nickname|default:"미설정" }}</p>
+      </div>
+      <div class="text-right">
+        {% if profile.campus == 'seoul' %}
+          <span class="inline-block px-3 py-1 rounded text-sm font-medium bg-[#eef0f8] text-[#1B2A5E]">
+            서울캠퍼스
+          </span>
+        {% elif profile.campus == 'yongin' %}
+          <span class="inline-block px-3 py-1 rounded text-sm font-medium bg-[#E0EFFF] text-[#0057A8]">
+            용인캠퍼스
+          </span>
+        {% else %}
+          <span class="inline-block px-3 py-1 rounded text-sm font-medium bg-gray-100 text-gray-700">
+            양 캠퍼스
+          </span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- 프로필 수정 폼 -->
+  <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+    <h2 class="text-xl font-bold text-gray-900 mb-4">프로필 수정</h2>
+
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+
+      <!-- 닉네임 입력 -->
+      <div>
+        <label for="nickname" class="block text-sm font-medium text-gray-700 mb-2">
+          닉네임
+        </label>
+        <input
+          type="text"
+          name="nickname"
+          id="nickname"
+          value="{{ profile.nickname }}"
+          placeholder="닉네임을 입력하세요"
+          maxlength="30"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+        />
+        <p class="text-gray-500 text-xs mt-1">최대 30자</p>
+      </div>
+
+      <!-- 캠퍼스 선택 -->
+      <div>
+        <label for="campus" class="block text-sm font-medium text-gray-700 mb-2">
+          소속 캠퍼스
+        </label>
+        <select
+          name="campus"
+          id="campus"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+        >
+          <option value="seoul" {% if profile.campus == 'seoul' %}selected{% endif %}>서울캠퍼스</option>
+          <option value="yongin" {% if profile.campus == 'yongin' %}selected{% endif %}>용인캠퍼스</option>
+          <option value="both" {% if profile.campus == 'both' %}selected{% endif %}>양 캠퍼스</option>
+        </select>
+      </div>
+
+      <!-- 제출 버튼 -->
+      <div class="flex gap-2">
+        <button
+          type="submit"
+          class="px-6 py-2 bg-brand-500 text-white font-medium rounded-lg hover:bg-brand-600 transition-colors"
+        >
+          저장
+        </button>
+        <a
+          href="{% url 'navigation:index' %}"
+          class="px-6 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          취소
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- 보안 섹션 -->
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-xl font-bold text-gray-900 mb-4">보안</h2>
+
+    <div class="space-y-3">
+      <div>
+        <p class="text-sm text-gray-700 mb-2">비밀번호 변경</p>
+        <a
+          href="{% url 'account_change_password' %}"
+          class="inline-block px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          비밀번호 변경
+        </a>
+      </div>
+
+      <div>
+        <p class="text-sm text-gray-700 mb-2">계정 삭제</p>
+        <a
+          href="{% url 'account_logout' %}"
+          class="inline-block px-4 py-2 border border-red-300 text-red-700 font-medium rounded-lg hover:bg-red-50 transition-colors"
+        >
+          로그아웃
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

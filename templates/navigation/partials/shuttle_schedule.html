@@ -1,0 +1,58 @@
+<div class="bg-white rounded-lg shadow-md p-6">
+  <div class="mb-6">
+    <h3 class="text-lg font-bold text-gray-900 mb-4">{{ route.name }} 시간표</h3>
+
+    <!-- 요일별 탭 -->
+    <div class="flex gap-2 mb-4" x-data="{ activeTab: '{{ day_type }}' }">
+      <button
+        @click="activeTab = 'weekday'"
+        :class="{ 'bg-brand-500 text-white': activeTab === 'weekday', 'bg-gray-100 text-gray-700': activeTab !== 'weekday' }"
+        class="px-4 py-2 rounded-lg font-medium transition-colors"
+      >
+        평일
+      </button>
+      <button
+        @click="activeTab = 'saturday'"
+        :class="{ 'bg-brand-500 text-white': activeTab === 'saturday', 'bg-gray-100 text-gray-700': activeTab !== 'saturday' }"
+        class="px-4 py-2 rounded-lg font-medium transition-colors"
+      >
+        토요일
+      </button>
+      <button
+        @click="activeTab = 'sunday'"
+        :class="{ 'bg-brand-500 text-white': activeTab === 'sunday', 'bg-gray-100 text-gray-700': activeTab !== 'sunday' }"
+        class="px-4 py-2 rounded-lg font-medium transition-colors"
+      >
+        일요일/공휴일
+      </button>
+    </div>
+
+    <!-- 시간표 -->
+    {% if schedules %}
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+      {% for schedule in schedules %}
+        <div
+          {% if next_shuttle.id == schedule.id %}
+            class="flex items-center justify-center px-4 py-3 bg-[#dcfce7] border-2 border-[#16a34a] rounded-lg"
+          {% else %}
+            class="flex items-center justify-center px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg"
+          {% endif %}
+        >
+          <div class="text-center">
+            <p class="text-sm font-bold {% if next_shuttle.id == schedule.id %}text-[#16a34a]{% else %}text-gray-900{% endif %}">
+              {{ schedule.departure_time|time:"H:i" }}
+            </p>
+            {% if next_shuttle.id == schedule.id %}
+            <p class="text-xs text-[#16a34a] font-semibold mt-1">다음 출발</p>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-8 text-gray-500">
+      <p>{{ day_type }}의 운행 정보가 없습니다.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>

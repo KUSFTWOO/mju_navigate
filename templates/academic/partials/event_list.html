@@ -1,0 +1,134 @@
+{# 월 네비게이션 #}
+<div class="flex items-center justify-between mb-4">
+  <button
+    hx-get="{% url 'academic:event_list' %}?year={{ prev_year }}&month={{ prev_month }}&campus={{ campus }}"
+    hx-target="#event-list"
+    hx-swap="innerHTML"
+    class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors"
+  >
+    ← 이전
+  </button>
+  <h2 class="text-lg font-bold text-gray-900">
+    {{ year }}년 {{ month }}월
+  </h2>
+  <button
+    hx-get="{% url 'academic:event_list' %}?year={{ next_year }}&month={{ next_month }}&campus={{ campus }}"
+    hx-target="#event-list"
+    hx-swap="innerHTML"
+    class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors"
+  >
+    다음 →
+  </button>
+</div>
+
+{# 달력 그리드 #}
+<div class="mb-5 select-none">
+  {# 요일 헤더 #}
+  <div class="grid grid-cols-7 mb-1 text-center text-xs font-semibold">
+    <div class="py-1 text-red-500">일</div>
+    <div class="py-1 text-gray-500">월</div>
+    <div class="py-1 text-gray-500">화</div>
+    <div class="py-1 text-gray-500">수</div>
+    <div class="py-1 text-gray-500">목</div>
+    <div class="py-1 text-gray-500">금</div>
+    <div class="py-1 text-brand-500">토</div>
+  </div>
+
+  {# 날짜 행 #}
+  {% for week in calendar_matrix %}
+  <div class="grid grid-cols-7 gap-0.5 mb-0.5">
+    {% for cell in week %}
+    {% if cell.day %}
+    <div class="relative flex flex-col items-center pt-1 pb-3 rounded-lg text-sm font-medium transition-colors
+      {% if cell.is_today %}bg-brand-500 text-white
+      {% elif cell.is_sunday %}text-red-500 hover:bg-red-50
+      {% elif cell.is_saturday %}text-brand-500 hover:bg-brand-50
+      {% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+      {{ cell.day }}
+      {# 이벤트 점 #}
+      {% if cell.types %}
+      <div class="absolute bottom-1 flex gap-0.5">
+        {% for etype in cell.types %}
+        {% if forloop.counter <= 4 %}
+        <span class="w-1.5 h-1.5 rounded-full
+          {% if etype == 'holiday' %}bg-red-400
+          {% elif etype == 'exam' %}bg-amber-400
+          {% elif etype == 'registration' %}bg-violet-500
+          {% elif etype == 'ceremony' %}bg-pink-400
+          {% else %}bg-gray-400{% endif %}
+          {% if cell.is_today %}opacity-80{% endif %}">
+        </span>
+        {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% else %}
+    <div></div>
+    {% endif %}
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+
+{# 범례 #}
+<div class="flex gap-4 flex-wrap pb-4 mb-4 border-b border-gray-100 text-xs text-gray-500">
+  <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-400 inline-block"></span>공휴일/휴강</span>
+  <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span>시험</span>
+  <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-violet-500 inline-block"></span>수강신청</span>
+  <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-pink-400 inline-block"></span>행사/식</span>
+  <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-gray-400 inline-block"></span>기타</span>
+</div>
+
+{# 이벤트 목록 #}
+{% if events %}
+<div class="space-y-2">
+  {% for event in events %}
+  <div
+    hx-get="{% url 'academic:event_detail' event.pk %}"
+    hx-target="#modal-container"
+    hx-swap="innerHTML"
+    class="p-3.5 bg-gray-50 rounded-lg border border-gray-200 hover:border-brand-500 hover:bg-white cursor-pointer transition-all hover:shadow-sm"
+  >
+    <div class="flex items-start justify-between gap-3">
+      <div class="flex-1 min-w-0">
+        <h3 class="font-semibold text-gray-900 text-sm leading-snug">{{ event.title }}</h3>
+        <p class="text-xs text-gray-400 mt-0.5">
+          {% if event.start_date == event.end_date %}
+            {{ event.start_date|date:"Y.m.d" }}
+          {% else %}
+            {{ event.start_date|date:"Y.m.d" }} ~ {{ event.end_date|date:"m.d" }}
+          {% endif %}
+        </p>
+      </div>
+      <div class="flex gap-1 flex-shrink-0 flex-wrap justify-end">
+        {# 캠퍼스 배지 #}
+        {% if event.campus == 'seoul' %}
+          <span class="px-2 py-0.5 bg-[#eef0f8] text-campus-seoul text-xs font-medium rounded-full">서울</span>
+        {% elif event.campus == 'yongin' %}
+          <span class="px-2 py-0.5 bg-[#E0EFFF] text-campus-yongin text-xs font-medium rounded-full">용인</span>
+        {% else %}
+          <span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">공통</span>
+        {% endif %}
+        {# 유형 배지 #}
+        {% if event.event_type == 'holiday' %}
+          <span class="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full">공휴일</span>
+        {% elif event.event_type == 'exam' %}
+          <span class="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">시험</span>
+        {% elif event.event_type == 'registration' %}
+          <span class="px-2 py-0.5 bg-violet-100 text-violet-700 text-xs font-medium rounded-full">수강신청</span>
+        {% elif event.event_type == 'ceremony' %}
+          <span class="px-2 py-0.5 bg-pink-100 text-pink-700 text-xs font-medium rounded-full">행사</span>
+        {% else %}
+          <span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">기타</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-10">
+  <p class="text-gray-400 text-sm">📋 이 달의 일정이 없습니다.</p>
+</div>
+{% endif %}

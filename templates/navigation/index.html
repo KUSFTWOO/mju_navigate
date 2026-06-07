@@ -1,0 +1,438 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}길찾기 — MJU Navigate{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <!-- 출발지·도착지 선택 폼 -->
+  <form
+    hx-get="{% url 'navigation:search' %}"
+    hx-target="#route-result"
+    hx-swap="innerHTML"
+    hx-indicator="#loading-spinner"
+    @submit.prevent
+    class="bg-white rounded-lg shadow-md p-6 mb-6"
+    x-data="{
+      origin: 'seoul_campus',
+      destination: 'yongin_campus',
+      departureMode: 'now',
+      departureTime: ''
+    }"
+  >
+    <div class="flex items-center justify-between gap-4 mb-4">
+      <!-- 출발지 -->
+      <div class="flex-1">
+        <label class="block text-sm font-medium text-gray-700 mb-2">출발지</label>
+        <select
+          name="origin"
+          x-model="origin"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500"
+          @change="if (typeof updateMapOrigin === 'function') { updateMapOrigin(origin); }"
+        >
+          <option value="seoul_campus">🏫 서울캠퍼스</option>
+          <option value="yongin_campus">🏭 용인캠퍼스</option>
+        </select>
+      </div>
+
+      <!-- 방향 전환 버튼 -->
+      <div class="flex items-end">
+        <button
+          type="button"
+          @click="[origin, destination] = [destination, origin];
+                  if (typeof updateMapOrigin === 'function') { updateMapOrigin(origin); }
+                  if (typeof clearPreviousRoute === 'function') { clearPreviousRoute(); }"
+          class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm font-medium"
+          title="방향 전환"
+        >
+          ⇄
+        </button>
+      </div>
+
+      <!-- 도착지 -->
+      <div class="flex-1">
+        <label class="block text-sm font-medium text-gray-700 mb-2">도착지</label>
+        <select
+          name="destination"
+          x-model="destination"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500"
+        >
+          <option value="seoul_campus">🏫 서울캠퍼스</option>
+          <option value="yongin_campus">🏭 용인캠퍼스</option>
+        </select>
+      </div>
+
+      <!-- 검색 버튼 -->
+      <div class="flex items-end">
+        <button
+          type="button"
+          @click="
+            sessionStorage.setItem('selectedOrigin', origin);
+            sessionStorage.removeItem('selectedRouteIndex');
+            $el.closest('form').dispatchEvent(new Event('submit'));
+          "
+          class="px-6 py-2 bg-brand-500 text-white font-medium rounded-lg hover:bg-brand-600 transition-colors"
+        >
+          검색
+        </button>
+      </div>
+    </div>
+
+    <!-- 출발 시간 선택 -->
+    <div class="border-t border-gray-200 pt-4">
+      <label class="block text-sm font-medium text-gray-700 mb-3">출발 시간</label>
+      <div class="flex gap-3">
+        <!-- 지금 출발 라디오 -->
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input
+            type="radio"
+            x-model="departureMode"
+            value="now"
+            name="departure_mode"
+            class="w-4 h-4"
+          />
+          <span class="text-sm text-gray-700">지금 출발</span>
+        </label>
+
+        <!-- 시간 지정 라디오 -->
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input
+            type="radio"
+            x-model="departureMode"
+            value="specified"
+            name="departure_mode"
+            class="w-4 h-4"
+          />
+          <span class="text-sm text-gray-700">시간 지정</span>
+        </label>
+      </div>
+
+      <!-- 시간 입력 (시간 지정 모드일 때만 표시) -->
+      <div x-show="departureMode === 'specified'" class="mt-3">
+        <input
+          type="datetime-local"
+          x-model="departureTime"
+          name="departure_time"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 text-sm"
+          :value="departureTime || getCurrentDateTime()"
+        />
+      </div>
+
+      <!-- 숨겨진 필드: 현재 모드 전달 -->
+      <input type="hidden" name="departure_mode" :value="departureMode" />
+    </div>
+  </form>
+
+  <!-- 탭 UI -->
+  <div class="mb-6" x-data="{ activeTab: 'transit' }">
+    <div class="flex gap-2 border-b border-gray-200">
+      <!-- 셔틀 포함 탭 -->
+      <button
+        @click="activeTab = 'shuttle'"
+        :class="activeTab === 'shuttle' ? 'bg-brand-500 text-white' : 'bg-white border border-gray-300 text-gray-700'"
+        class="px-4 py-2 rounded-t-lg font-medium text-sm transition-colors"
+        onclick="
+          const form = document.querySelector('form');
+          const origin = form.querySelector('select[name=origin]').value;
+          const destination = form.querySelector('select[name=destination]').value;
+          const departureMode = form.querySelector('input[name=departure_mode]:checked').value;
+          const departureTime = form.querySelector('input[name=departure_time]').value;
+          const params = new URLSearchParams({
+            origin: origin,
+            destination: destination,
+            tab: 'shuttle',
+            departure_mode: departureMode
+          });
+          if (departureTime) params.append('departure_time', departureTime);
+          htmx.ajax('GET', '/search/?' + params, {
+            target: '#route-result',
+            swap: 'innerHTML'
+          });
+        "
+      >
+        🚌 셔틀 포함
+      </button>
+
+      <!-- 일반 대중교통 탭 -->
+      <button
+        @click="activeTab = 'transit'"
+        :class="activeTab === 'transit' ? 'bg-brand-500 text-white' : 'bg-white border border-gray-300 text-gray-700'"
+        class="px-4 py-2 rounded-t-lg font-medium text-sm transition-colors"
+        onclick="
+          const form = document.querySelector('form');
+          const origin = form.querySelector('select[name=origin]').value;
+          const destination = form.querySelector('select[name=destination]').value;
+          const departureMode = form.querySelector('input[name=departure_mode]:checked').value;
+          const departureTime = form.querySelector('input[name=departure_time]').value;
+          const params = new URLSearchParams({
+            origin: origin,
+            destination: destination,
+            tab: 'transit',
+            departure_mode: departureMode
+          });
+          if (departureTime) params.append('departure_time', departureTime);
+          htmx.ajax('GET', '/search/?' + params, {
+            target: '#route-result',
+            swap: 'innerHTML'
+          });
+        "
+      >
+        🚇 일반 대중교통
+      </button>
+
+      <!-- 시간표 탭 -->
+      <button
+        @click="activeTab = 'timetable'"
+        :class="activeTab === 'timetable' ? 'bg-brand-500 text-white' : 'bg-white border border-gray-300 text-gray-700'"
+        class="px-4 py-2 rounded-t-lg font-medium text-sm transition-colors"
+        onclick="
+          htmx.ajax('GET', '/shuttle/timetable/', {
+            target: '#route-result',
+            swap: 'innerHTML'
+          });
+        "
+      >
+        🕐 시간표
+      </button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- 좌측: 지도 및 경로 결과 -->
+    <div class="lg:col-span-2">
+      <!-- 다음 셔틀 타임카드 -->
+      {% if next_mju_shuttle or next_giheung_shuttle %}
+      <div class="mb-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-3">🚌 다음 셔틀</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {% if next_mju_shuttle %}
+          <div class="flex items-center justify-between p-4 bg-[#dcfce7] border-2 border-[#16a34a] rounded-lg">
+            <div>
+              <p class="text-xs text-gray-600">명지대역 → 용인캠</p>
+              <p class="text-2xl font-bold text-[#16a34a]">{{ next_mju_shuttle.departure_time|time:"H:i" }}</p>
+            </div>
+            <span class="text-sm text-gray-600">다음 셔틀</span>
+          </div>
+          {% endif %}
+
+          {% if next_giheung_shuttle %}
+          <div class="flex items-center justify-between p-4 bg-[#dcfce7] border-2 border-[#16a34a] rounded-lg">
+            <div>
+              <p class="text-xs text-gray-600">기흥역 ↔ 용인캠</p>
+              <p class="text-2xl font-bold text-[#16a34a]">{{ next_giheung_shuttle.departure_time|time:"H:i" }}</p>
+            </div>
+            <span class="text-sm text-gray-600">다음 셔틀</span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Kakao Maps -->
+      <div
+        id="map"
+        class="w-full h-96 rounded-lg shadow-md mb-6"
+        style="height: 400px;"
+      ></div>
+
+      <!-- 로딩 표시 -->
+      <div id="loading-spinner" class="htmx-indicator text-center py-4">
+        <div class="inline-block animate-spin text-2xl">⟳</div>
+        <p class="text-gray-600 text-sm mt-2">경로 검색 중...</p>
+      </div>
+
+      <!-- 경로 결과 -->
+      <div id="route-result" class="space-y-3">
+        <p class="text-center text-gray-500 py-8">출발지와 도착지를 선택하고 검색하세요</p>
+      </div>
+    </div>
+
+    <!-- 우측: 안내 정보 -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <h3 class="text-lg font-bold text-gray-900 mb-4">🗺️ 길찾기 안내</h3>
+
+      <div class="space-y-4 text-sm">
+        <div class="bg-[#eef0f8] border-l-4 border-[#1B2A5E] p-3 rounded">
+          <p class="font-semibold text-[#1B2A5E]">서울캠퍼스</p>
+          <p class="text-gray-600 text-xs mt-1">건물: 종합관</p>
+          <p class="text-gray-600 text-xs mt-1">주소: 서울특별시 서대문구 거북골로 34</p>
+        </div>
+
+        <div class="bg-[#E0EFFF] border-l-4 border-[#0057A8] p-3 rounded">
+          <p class="font-semibold text-[#0057A8]">용인캠퍼스</p>
+          <p class="text-gray-600 text-xs mt-1">건물: 학생회관</p>
+          <p class="text-gray-600 text-xs mt-1">주소: 경기도 용인시 처인구 명지로 116</p>
+        </div>
+
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-3 rounded">
+          <p class="font-semibold text-blue-900">💡 팁</p>
+          <p class="text-gray-600 text-xs mt-1">셔틀 타임카드에서 다음 출발 시각을 확인할 수 있습니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Kakao Maps 초기화 -->
+<script>
+  // 캠퍼스 좌표 데이터 설정
+  window.CAMPUS_COORDS_JSON = '{{ campus_coords_json|safe }}';
+
+  // 캠퍼스 데이터 파싱
+  window.CAMPUS_COORDS = JSON.parse(window.CAMPUS_COORDS_JSON || '{}');
+
+  // 출발지 기준으로 지도 업데이트
+  function updateMapOrigin(origin) {
+    console.log('출발지 업데이트:', origin);
+    sessionStorage.setItem('selectedOrigin', origin);
+
+    try {
+      // 지도가 이미 초기화되었으면 지도 이동
+      if (typeof window.map !== 'undefined' && window.map && window.CAMPUS_DATA) {
+        const originData = window.CAMPUS_DATA[origin];
+        if (originData && originData.lat && originData.lng) {
+          const center = new kakao.maps.LatLng(originData.lat, originData.lng);
+          window.map.setCenter(center);
+          window.map.setLevel(8);
+          console.log('✓ 지도 중심 이동:', originData.name);
+        }
+      } else {
+        console.warn('지도가 아직 초기화되지 않았습니다');
+      }
+    } catch (error) {
+      console.error('출발지 업데이트 오류:', error);
+    }
+  }
+
+  // 이전 경로 선택 데이터 초기화 (방향 전환 시)
+  function clearPreviousRoute() {
+    console.log('이전 경로 선택 데이터 초기화');
+    sessionStorage.removeItem('selectedRouteIndex');
+
+    try {
+      // 지도의 경로 표시 초기화
+      if (typeof window.map !== 'undefined' && window.map) {
+        // 기존 폴리라인 제거
+        if (window.currentPolylines && window.currentPolylines.length > 0) {
+          window.currentPolylines.forEach(polyline => {
+            polyline.setMap(null);
+          });
+          window.currentPolylines = [];
+          console.log('✓ 지도의 경로 표시 초기화');
+        }
+        // 캠퍼스 마커만 표시
+        if (typeof window.addCampusMarkers === 'function') {
+          window.addCampusMarkers();
+        }
+      }
+    } catch (error) {
+      console.error('경로 초기화 오류:', error);
+    }
+  }
+
+  // 경로 선택 함수 (UX 개선)
+  function selectRoute(routeIndex) {
+    console.log('경로 선택:', routeIndex);
+    sessionStorage.setItem('selectedRouteIndex', routeIndex);
+
+    // 카드 선택 상태 업데이트
+    document.querySelectorAll('.route-card').forEach(card => {
+      const index = parseInt(card.dataset.routeIndex);
+      if (index === routeIndex) {
+        card.classList.add('border-2', 'border-brand-500', 'bg-brand-50', 'shadow-md');
+        card.classList.remove('border', 'border-gray-200', 'bg-white');
+      } else {
+        card.classList.remove('border-2', 'border-brand-500', 'bg-brand-50', 'shadow-md');
+        card.classList.add('border', 'border-gray-200', 'bg-white');
+      }
+    });
+
+    // 경로 데이터 + loadLane 정밀 그래픽 데이터 병렬 조회
+    const routePromise = fetch('/select/?index=' + routeIndex)
+      .then(r => { if (!r.ok) throw new Error(r.statusText); return r.json(); });
+
+    const lanePromise = fetch('/loadlane/?index=' + routeIndex)
+      .then(r => r.ok ? r.json() : null)
+      .catch(() => null);  // loadLane 실패해도 기본 drawRoute로 폴백
+
+    Promise.all([routePromise, lanePromise])
+      .then(([selectedRoute, laneData]) => {
+        console.log('선택된 경로:', selectedRoute);
+
+        if (laneData && laneData.result && typeof window.drawRouteWithLoadLane === 'function') {
+          // ODsay loadLane 정밀 좌표 사용 (카카오버스 기준)
+          window.drawRouteWithLoadLane(laneData, selectedRoute);
+          console.log('✓ loadLane 정밀 경로 표시 완료');
+        } else if (typeof window.drawRoute === 'function') {
+          // 폴백: passStopList 기반 기존 방식
+          window.drawRoute(selectedRoute);
+          console.log('✓ 경로 지도에 표시 완료 (폴백)');
+        }
+      })
+      .catch(error => {
+        console.error('경로 조회 오류:', error);
+        alert('경로 정보를 불러올 수 없습니다. 다시 검색해주세요.');
+      });
+  }
+
+  // 현재 시간을 datetime-local 형식으로 반환
+  function getCurrentDateTime() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
+
+  // 페이지 로드 시 기본 출발지 설정
+  function setupDefaultOrigin() {
+    try {
+      const defaultOrigin = 'seoul_campus';
+      sessionStorage.setItem('selectedOrigin', defaultOrigin);
+      console.log('✓ 기본 출발지 설정:', defaultOrigin);
+    } catch (error) {
+      console.error('기본 출발지 설정 오류:', error);
+    }
+  }
+
+  // DOM 로드 완료 또는 현재 상태에서 실행
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupDefaultOrigin);
+  } else {
+    setupDefaultOrigin();
+  }
+</script>
+
+<script src="{% static 'js/maps.js' %}"></script>
+
+<script>
+  // Django에서 주입받은 캠퍼스 좌표
+  const CAMPUS = {
+    seoul_campus: {
+      lat: 37.5803770223812,
+      lng: 126.921348530876,
+      name: '서울캠퍼스',
+      building: '종합관'
+    },
+    yongin_campus: {
+      lat: 37.2218072639192,
+      lng: 127.190183727516,
+      name: '용인캠퍼스',
+      building: '학생회관'
+    }
+  };
+
+  // window.CAMPUS_COORDS_JSON이 있으면 그것을 사용, 없으면 위 값을 사용
+  if (typeof updateCampusCoordinates === 'function' && window.CAMPUS_COORDS_JSON) {
+    updateCampusCoordinates(window.CAMPUS_COORDS_JSON);
+    console.log('캠퍼스 좌표 업데이트 완료');
+  } else {
+    // updateCampusCoordinates() 함수가 없거나 JSON이 없으면
+    // maps.js가 CAMPUS를 직접 참조하도록
+    window.CAMPUS = CAMPUS;
+  }
+</script>
+{% endblock %}

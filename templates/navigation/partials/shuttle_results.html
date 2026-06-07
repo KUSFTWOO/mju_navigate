@@ -1,0 +1,242 @@
+{% load navigation_extras %}
+
+<!-- JavaScript 변수로 경로 데이터 로드 (window 전역 변수로 재할당 가능하게) -->
+<script>
+  window.SHUTTLE_ROUTES = {{ shuttle_routes_json|safe }};
+</script>
+
+<!-- 셔틀버스 포함 조합 경로 결과 -->
+<div class="space-y-4">
+  {% if shuttle_routes %}
+    {% for route in shuttle_routes %}
+    <div class="route-card bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden cursor-pointer hover:border-brand-500 hover:shadow-md transition-all"
+         data-index="{{ forloop.counter0 }}"
+         onclick="selectShuttleComboRoute(this, SHUTTLE_ROUTES[{{ forloop.counter0 }}])"
+         data-route-type="shuttle_combo"
+         data-transit-shape="{{ route.transit_segment|safe }}"
+         data-transfer-lat="{{ route.transfer_lat }}"
+         data-transfer-lng="{{ route.transfer_lng }}"
+         data-dest-lat="{% if route.shuttle_route_id == 4 %}37.2218072639192{% else %}37.5803770223812{% endif %}"
+         data-dest-lng="{% if route.shuttle_route_id == 4 %}127.190183727516{% else %}126.921348530876{% endif %}"
+    >
+
+      <!-- 카드 헤더: 배지 + 타이틀 + 소요시간 -->
+      <div class="bg-gradient-to-r from-[#f0fdf4] to-white p-4 border-b border-gray-100">
+        <div class="flex items-start justify-between mb-2">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="inline-block px-2 py-1 bg-[#dcfce7] text-[#15803d] text-xs font-semibold rounded">
+                🚌 셔틀버스 포함
+              </span>
+              <span class="text-gray-700 font-semibold text-sm">{{ route.label }}</span>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-2xl font-bold text-gray-900">
+              {{ route.total_minutes|minutes_to_hhmm }}
+            </p>
+            <p class="text-xs text-gray-500">
+              도착 {{ route.arrival_time }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 카드 본문: 경로 구간 -->
+      <div class="p-4 space-y-3">
+        <!-- 출발지 -->
+        <div class="flex items-start gap-3">
+          <span class="text-lg">📍</span>
+          <div>
+            <p class="text-sm font-semibold text-gray-900">{{ origin_name }}</p>
+            <p class="text-xs text-gray-500">출발</p>
+          </div>
+        </div>
+
+        {% if route.direction == 'seoul_to_yongin' %}
+          <!-- 서울→용인: 대중교통 → 환승거점 → 셔틀 순서 -->
+
+          <!-- 지하철 구간 (있을 때만) -->
+          {% if route.subway_subpaths %}
+          {% with first_sub=route.subway_subpaths.0 %}
+          {% with sub_color=first_sub.name|get_subway_color %}
+          <div class="ml-6 border-l-4 pl-3 py-2" style="border-color: {{ sub_color }};">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-sm font-semibold" style="color: {{ sub_color }};">🚇 지하철</span>
+              <span class="text-xs text-gray-500">{{ route.transit_minutes }}분</span>
+            </div>
+            <p class="text-xs text-gray-600">
+              {% for subpath in route.subway_subpaths %}
+                {% with line_color=subpath.name|get_subway_color %}
+                <span style="display:inline-block;padding:0.125rem 0.5rem;background-color:{{ line_color }}1A;color:{{ line_color }};border-radius:0.25rem;font-size:0.75rem;font-weight:600;margin-right:0.25rem;">
+                  {{ subpath.name }}
+                </span>
+                {{ subpath.stations|get_station_count_text }}
+                {% endwith %}
+                {% if not forloop.last %}<br>{% endif %}
+              {% endfor %}
+            </p>
+          </div>
+          {% endwith %}
+          {% endwith %}
+          {% endif %}
+
+          <!-- 버스 구간 (있을 때만) -->
+          {% if route.bus_subpaths %}
+          {% with first_bus=route.bus_subpaths.0 %}
+          {% with bus_color=first_bus|get_polyline_color %}
+          <div class="ml-6 border-l-4 pl-3 py-2" style="border-color: {{ bus_color }};">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-sm font-semibold" style="color: {{ bus_color }};">🚌 버스</span>
+              <span class="text-xs text-gray-500">{{ route.transit_minutes }}분</span>
+            </div>
+            <p class="text-xs text-gray-600">
+              {% for subpath in route.bus_subpaths %}
+                {% with bc=subpath|get_polyline_color %}
+                <span style="display:inline-block;padding:0.125rem 0.5rem;background-color:{{ bc }}1A;color:{{ bc }};border-radius:0.25rem;font-size:0.75rem;font-weight:600;margin-right:0.25rem;">{{ subpath.name }}번</span>
+                {% endwith %}
+                {% if not forloop.last %}<br>{% endif %}
+              {% endfor %}
+            </p>
+          </div>
+          {% endwith %}
+          {% endwith %}
+          {% endif %}
+
+          <!-- 환승 거점 -->
+          <div class="ml-6 border-l-4 border-yellow-400 bg-yellow-50 rounded p-3 py-2">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-semibold text-gray-900">📍 {{ route.transfer_point }} 도착</p>
+                <p class="text-xs text-gray-600">대기 {{ route.wait_minutes }}분</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 셔틀버스 구간 (↓) -->
+          <div class="ml-6 border-l-4 border-[#16a34a] bg-[#f0fdf4] rounded p-3 py-2">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-sm font-semibold text-[#15803d]">🚌 {{ route.shuttle_route_name }}</span>
+              <span class="text-xs text-[#15803d]">{{ route.shuttle_duration }}분</span>
+            </div>
+            <p class="text-xs text-gray-700">
+              {{ route.transfer_point }} {{ route.shuttle_departure }} 출발
+            </p>
+          </div>
+
+        {% elif route.direction == 'yongin_to_seoul' %}
+          <!-- 용인→서울: 셔틀 → 환승거점 → 대중교통 순서 -->
+
+          <!-- 셔틀버스 구간 (↓) -->
+          <div class="ml-6 border-l-4 border-[#16a34a] bg-[#f0fdf4] rounded p-3 py-2">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-sm font-semibold text-[#15803d]">🚌 {{ route.shuttle_route_name }}</span>
+              <span class="text-xs text-[#15803d]">{{ route.shuttle_duration }}분</span>
+            </div>
+            <p class="text-xs text-gray-700">
+              {{ origin_name }} 출발 → {{ route.transfer_point }} 도착
+            </p>
+            <p class="text-xs text-gray-700 mt-1">
+              예정 출발: {{ route.shuttle_departure }}
+            </p>
+          </div>
+
+          <!-- 환승 거점 -->
+          <div class="ml-6 border-l-4 border-yellow-400 bg-yellow-50 rounded p-3 py-2">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-semibold text-gray-900">📍 {{ route.transfer_point }} 도착</p>
+                <p class="text-xs text-gray-600">환승 준비</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 지하철 구간 (있을 때만) -->
+          {% if route.subway_subpaths %}
+          {% with first_sub=route.subway_subpaths.0 %}
+          {% with sub_color=first_sub.name|get_subway_color %}
+          <div class="ml-6 border-l-4 pl-3 py-2" style="border-color: {{ sub_color }};">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-sm font-semibold" style="color: {{ sub_color }};">🚇 지하철</span>
+              <span class="text-xs text-gray-500">{{ route.transit_minutes }}분</span>
+            </div>
+            <p class="text-xs text-gray-600">
+              {% for subpath in route.subway_subpaths %}
+                {% with line_color=subpath.name|get_subway_color %}
+                <span style="display:inline-block;padding:0.125rem 0.5rem;background-color:{{ line_color }}1A;color:{{ line_color }};border-radius:0.25rem;font-size:0.75rem;font-weight:600;margin-right:0.25rem;">
+                  {{ subpath.name }}
+                </span>
+                {{ subpath.stations|get_station_count_text }}
+                {% endwith %}
+                {% if not forloop.last %}<br>{% endif %}
+              {% endfor %}
+            </p>
+          </div>
+          {% endwith %}
+          {% endwith %}
+          {% endif %}
+
+          <!-- 버스 구간 (있을 때만) -->
+          {% if route.bus_subpaths %}
+          {% with first_bus=route.bus_subpaths.0 %}
+          {% with bus_color=first_bus|get_polyline_color %}
+          <div class="ml-6 border-l-4 pl-3 py-2" style="border-color: {{ bus_color }};">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-sm font-semibold" style="color: {{ bus_color }};">🚌 버스</span>
+              <span class="text-xs text-gray-500">{{ route.transit_minutes }}분</span>
+            </div>
+            <p class="text-xs text-gray-600">
+              {% for subpath in route.bus_subpaths %}
+                {% with bc=subpath|get_polyline_color %}
+                <span style="display:inline-block;padding:0.125rem 0.5rem;background-color:{{ bc }}1A;color:{{ bc }};border-radius:0.25rem;font-size:0.75rem;font-weight:600;margin-right:0.25rem;">{{ subpath.name }}번</span>
+                {% endwith %}
+                {% if not forloop.last %}<br>{% endif %}
+              {% endfor %}
+            </p>
+          </div>
+          {% endwith %}
+          {% endwith %}
+          {% endif %}
+
+        {% endif %}
+
+        <!-- 도착지 -->
+        <div class="ml-6 flex items-start gap-3 pt-2 border-t-2 border-gray-100">
+          <span class="text-lg">📍</span>
+          <div>
+            <p class="text-sm font-semibold text-gray-900">{{ destination_name }}</p>
+            <p class="text-xs text-gray-500">{{ route.arrival_time }} 도착</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <!-- 결과 없음 -->
+    <div class="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
+      <p class="text-gray-600 text-base font-semibold">현재 운행 중인 셔틀버스이 없습니다</p>
+      <p class="text-gray-500 text-sm mt-2">일반 대중교통 탭에서 다른 옵션을 확인해주세요.</p>
+    </div>
+  {% endif %}
+</div>
+
+<script>
+function selectShuttleComboRoute(card, route) {
+  // 모든 카드에서 선택 상태 제거
+  document.querySelectorAll('.route-card').forEach(c => {
+    c.classList.remove('border-2', 'border-brand-500', 'bg-brand-50', 'shadow-md');
+    c.classList.add('border', 'border-gray-200', 'bg-white');
+  });
+
+  // 선택한 카드에 스타일 적용
+  card.classList.remove('border', 'border-gray-200', 'bg-white');
+  card.classList.add('border-2', 'border-brand-500', 'bg-brand-50', 'shadow-md');
+
+  // 셔틀 조합 경로를 지도에 그리기
+  if (typeof window.drawShuttleComboRoute === 'function') {
+    window.drawShuttleComboRoute(route);
+  } else {
+    console.warn('drawShuttleComboRoute 함수가 정의되지 않았습니다');
+  }
+}
+</script>

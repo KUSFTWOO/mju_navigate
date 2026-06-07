@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 명지대학교 학사일정</title>
+<style>
+  :root {
+    --bg: #f5f7fa;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --primary: #3b82f6;
+    --primary-light: #eff6ff;
+    --text: #1e293b;
+    --muted: #64748b;
+    --sunday: #ef4444;
+    --saturday: #3b82f6;
+    --c-registration: #8b5cf6;
+    --c-exam: #f59e0b;
+    --c-vacation: #10b981;
+    --c-event: #ec4899;
+    --c-holiday: #ef4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 18px 32px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  header h1 { font-size: 1.35rem; font-weight: 700; }
+  header a { font-size: 0.78rem; color: var(--primary); text-decoration: none; }
+  header a:hover { text-decoration: underline; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; padding: 12px 32px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--muted); cursor: pointer; user-select: none; }
+  .legend-item.off { opacity: 0.35; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .tabs { display: flex; gap: 4px; padding: 16px 32px 0; }
+  .tab { padding: 8px 20px; border-radius: 8px 8px 0 0; border: 1px solid var(--border); border-bottom: none; background: var(--bg); cursor: pointer; font-size: 0.88rem; font-weight: 600; color: var(--muted); transition: all 0.15s; }
+  .tab.active { background: var(--surface); color: var(--primary); }
+  .semester-panel { display: none; padding: 0 32px 32px; background: var(--surface); border: 1px solid var(--border); border-top: none; border-radius: 0 8px 8px 8px; margin: 0 32px; }
+  .semester-panel.active { display: block; }
+  .months-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; padding-top: 24px; }
+  .month-card { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .month-header { background: var(--primary); color: #fff; padding: 10px 14px; font-weight: 700; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; }
+  .month-header small { font-weight: 400; font-size: 0.74rem; opacity: 0.85; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); padding: 8px; gap: 2px; }
+  .cal-dow { text-align: center; font-size: 0.68rem; font-weight: 600; color: var(--muted); padding: 4px 0; }
+  .cal-dow:first-child { color: var(--sunday); }
+  .cal-dow:last-child { color: var(--saturday); }
+  .cal-day { position: relative; text-align: center; padding: 5px 2px 14px; font-size: 0.78rem; border-radius: 6px; min-height: 36px; cursor: default; }
+  .cal-day:not(.empty):hover { background: var(--primary-light); }
+  .cal-day .num { display: block; font-weight: 500; line-height: 1; }
+  .cal-day.sun .num { color: var(--sunday); }
+  .cal-day.sat .num { color: var(--saturday); }
+  .cal-day.today { background: var(--primary-light); }
+  .cal-day.today .num { color: var(--primary); font-weight: 800; }
+  .event-dots { display: flex; justify-content: center; gap: 2px; flex-wrap: wrap; position: absolute; bottom: 2px; left: 0; right: 0; }
+  .event-dots .dot { width: 5px; height: 5px; }
+  .schedule-list { padding: 20px 0 0; }
+  .schedule-list h3 { font-size: 0.82rem; color: var(--muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .schedule-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+  .schedule-table th { text-align: left; padding: 8px 12px; background: var(--bg); color: var(--muted); font-weight: 600; font-size: 0.76rem; border-bottom: 1px solid var(--border); }
+  .schedule-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .schedule-table tr:last-child td { border-bottom: none; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; color: #fff; }
+  .badge-registration { background: var(--c-registration); }
+  .badge-exam { background: var(--c-exam); }
+  .badge-vacation { background: var(--c-vacation); }
+  .badge-event { background: var(--c-event); }
+  .badge-holiday { background: var(--c-holiday); }
+  .note { font-size: 0.75rem; color: var(--muted); padding: 10px 0 0; }
+  @media (max-width: 600px) {
+    header, .legend, .tabs { padding-left: 16px; padding-right: 16px; }
+    .semester-panel { margin: 0 16px; padding: 0 16px 24px; }
+    .months-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📅 2026 명지대학교 학사일정</h1>
+  <a href="https://www.mju.ac.kr/mjukr/262/subview.do" target="_blank">공식 학사일정 페이지 →</a>
+</header>
+
+<div class="legend" id="legend">
+  <label class="legend-item" data-type="registration"><span class="dot" style="background:var(--c-registration)"></span> 수강신청·행정</label>
+  <label class="legend-item" data-type="exam"><span class="dot" style="background:var(--c-exam)"></span> 시험·평가</label>
+  <label class="legend-item" data-type="vacation"><span class="dot" style="background:var(--c-vacation)"></span> 방학·휴무</label>
+  <label class="legend-item" data-type="event"><span class="dot" style="background:var(--c-event)"></span> 행사·기타</label>
+  <label class="legend-item" data-type="holiday"><span class="dot" style="background:var(--c-holiday)"></span> 공휴일</label>
+</div>
+
+<div style="height:16px;background:var(--bg)"></div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab(0)">전반기 (1월 – 6월)</div>
+  <div class="tab" onclick="switchTab(1)">후반기 (7월 – 12월)</div>
+</div>
+
+<div class="semester-panel active" id="panel-0">
+  <div class="months-grid" id="grid-0"></div>
+  <div class="schedule-list">
+    <h3>전반기 (1–6월) 일정표</h3>
+    <table class="schedule-table" id="table-0"></table>
+  </div>
+</div>
+
+<div class="semester-panel" id="panel-1">
+  <div class="months-grid" id="grid-1"></div>
+  <div class="schedule-list">
+    <h3>후반기 (7–12월) 일정표</h3>
+    <table class="schedule-table" id="table-1"></table>
+  </div>
+</div>
+
+<div style="padding:12px 32px;color:var(--muted);font-size:0.74rem;">
+  ※ 상기 일정은 학교 사정에 의해 변동될 수 있습니다. 최신 정보는 <a href="https://www.mju.ac.kr/mjukr/262/subview.do" target="_blank" style="color:var(--primary)">명지대학교 학사일정</a>에서 확인하세요.
+</div>
+
+<script>
+// ──────────────────────────────────────────────
+// 명지대학교 2026 학사일정 (공식 홈페이지 크롤링)
+// ──────────────────────────────────────────────
+const events = [
+  // ===== 공휴일 =====
+  { date:'2026-01-01', label:'신정', type:'holiday' },
+  { date:'2026-02-16', label:'설날 연휴 시작', type:'holiday' },
+  { date:'2026-02-17', label:'설날', type:'holiday' },
+  { date:'2026-02-18', label:'설날 연휴 종료', type:'holiday' },
+  { date:'2026-03-01', label:'삼일절', type:'holiday' },
+  { date:'2026-05-01', label:'노동절', type:'holiday' },
+  { date:'2026-05-05', label:'어린이날', type:'holiday' },
+  { date:'2026-05-25', label:'석가탄신일', type:'holiday' },
+  { date:'2026-07-17', label:'제헌절', type:'holiday' },
+  { date:'2026-08-15', label:'광복절', type:'holiday' },
+  { date:'2026-08-16', label:'광복절 대체휴일', type:'holiday' },
+  { date:'2026-09-24', label:'추석 연휴', type:'holiday' },
+  { date:'2026-09-25', label:'추석', type:'holiday' },
+  { date:'2026-09-26', label:'추석 연휴(대체휴일)', type:'holiday' },
+  { date:'2026-10-05', label:'개천절(대체휴일)', type:'holiday' },
+  { date:'2026-10-09', label:'한글날', type:'holiday' },
+  { date:'2026-12-25', label:'성탄절', type:'holiday' },
+
+  // ===== 방학·휴무 =====
+  { date:'2026-01-01', label:'동계방학 중 (12.15~02.27)', type:'vacation' },
+  { date:'2026-01-19', label:'동계 집중 휴무 시작', type:'vacation' },
+  { date:'2026-01-23', label:'동계 집중 휴무 종료', type:'vacation' },
+  { date:'2026-02-27', label:'동계방학 종료', type:'vacation' },
+  { date:'2026-06-16', label:'하계방학 시작', type:'vacation' },
+  { date:'2026-08-31', label:'하계방학 종료', type:'vacation' },
+  { date:'2026-07-27', label:'하계 집중 휴무 시작', type:'vacation' },
+  { date:'2026-07-31', label:'하계 집중 휴무 종료', type:'vacation' },
+  { date:'2026-12-15', label:'동계방학 시작 (12.15~02.26)', type:'vacation' },
+
+  // ===== 1월 학사 =====
+  { date:'2026-01-05', label:'복수·부·융합전공 접수 / 전과·재입학 원서접수 시작', type:'registration' },
+  { date:'2026-01-09', label:'전과·재입학 원서접수 마감 / 박사학위 청구논문(제본) 제출 마감', type:'registration' },
+  { date:'2026-01-05', label:'1학기 휴·복학기간 시작', type:'registration' },
+  { date:'2026-01-16', label:'1학기 휴·복학기간 종료', type:'registration' },
+
+  // ===== 2월 학사 =====
+  { date:'2026-02-09', label:'1학기 수강신청 시작', type:'registration' },
+  { date:'2026-02-23', label:'1학기 수강신청 마감', type:'registration' },
+  { date:'2026-02-10', label:'[대학원] 학위수여식', type:'event' },
+  { date:'2026-02-11', label:'[학부] 학위수여식', type:'event' },
+  { date:'2026-02-19', label:'신입생 학습능력평가', type:'event' },
+  { date:'2026-02-19', label:'1학기 등록기간 시작', type:'registration' },
+  { date:'2026-02-27', label:'1학기 등록기간 종료', type:'registration' },
+
+  // ===== 3월 학사 =====
+  { date:'2026-03-01', label:'학기 개시일', type:'event' },
+  { date:'2026-03-03', label:'1학기 개강 / 수강신청 변경기간 시작', type:'event' },
+  { date:'2026-03-06', label:'수강신청 변경기간 종료', type:'registration' },
+  { date:'2026-03-09', label:'조기졸업 접수·학생 면담 주간 시작', type:'registration' },
+  { date:'2026-03-13', label:'조기졸업 접수 마감', type:'registration' },
+  { date:'2026-03-14', label:'[대학원] 1학기 외국어시험', type:'exam' },
+  { date:'2026-03-16', label:'수강철회 시작', type:'registration' },
+  { date:'2026-03-20', label:'수강철회 마감', type:'registration' },
+  { date:'2026-03-27', label:'제1차 모의토익시험', type:'event' },
+
+  // ===== 4월 학사 =====
+  { date:'2026-04-04', label:'[대학원] 1학기 종합시험', type:'exam' },
+  { date:'2026-04-06', label:'중간 강의평가 시작', type:'exam' },
+  { date:'2026-04-10', label:'중간 강의평가 종료', type:'exam' },
+  { date:'2026-04-13', label:'[대학원] 후기 신·편입생 모집 시작', type:'event' },
+  { date:'2026-04-20', label:'[학부] 중간고사 시작', type:'exam' },
+  { date:'2026-04-24', label:'[학부] 중간고사 종료', type:'exam' },
+  { date:'2026-04-27', label:'[대학원] 지도교수 제청서 제출 시작', type:'registration' },
+
+  // ===== 5월 학사 =====
+  { date:'2026-05-08', label:'[대학원] 후기 신·편입생 모집 마감', type:'event' },
+  { date:'2026-05-25', label:'강의평가 시작', type:'exam' },
+  { date:'2026-05-26', label:'재수강신청원 제출 시작', type:'registration' },
+  { date:'2026-05-29', label:'재수강신청원 제출 마감', type:'registration' },
+
+  // ===== 6월 학사 =====
+  { date:'2026-06-01', label:'하계 계절수업 접수·조기복학 시작', type:'registration' },
+  { date:'2026-06-03', label:'전국동시지방선거', type:'event' },
+  { date:'2026-06-05', label:'강의평가 종료 / 하계 계절수업 접수 마감', type:'exam' },
+  { date:'2026-06-08', label:'기말고사 시작', type:'exam' },
+  { date:'2026-06-15', label:'기말고사 종료', type:'exam' },
+  { date:'2026-06-16', label:'공휴일 수업보강 시작', type:'exam' },
+  { date:'2026-06-19', label:'공휴일 수업보강 종료', type:'exam' },
+  { date:'2026-06-22', label:'성적이의 신청 시작 / 하계 계절수업 시작', type:'registration' },
+  { date:'2026-06-26', label:'성적이의 신청 마감', type:'registration' },
+
+  // ===== 7월 학사 =====
+  { date:'2026-07-03', label:'학생설계전공 접수 마감', type:'registration' },
+  { date:'2026-07-06', label:'재입학 원서접수·복수·부전공 접수 시작 / 2학기 휴·복학 시작', type:'registration' },
+  { date:'2026-07-10', label:'하계 계절수업 종료 / [대학원] 박사학위청구논문(제본) 제출 마감', type:'registration' },
+  { date:'2026-07-17', label:'2학기 휴·복학기간 종료', type:'registration' },
+
+  // ===== 8월 학사 =====
+  { date:'2026-08-10', label:'2학기 수강신청 시작', type:'registration' },
+  { date:'2026-08-18', label:'[학부] 후기 학위수여식(인문) / 2학기 등록기간 시작', type:'event' },
+  { date:'2026-08-19', label:'[학부] 후기 학위수여식(자연)', type:'event' },
+  { date:'2026-08-20', label:'2학기 수강신청 마감', type:'registration' },
+  { date:'2026-08-28', label:'2학기 등록기간 종료', type:'registration' },
+
+  // ===== 9월 학사 =====
+  { date:'2026-09-01', label:'2학기 개강 / 학기 개시일 / 수강신청 변경기간 시작', type:'event' },
+  { date:'2026-09-04', label:'수강신청 변경기간 종료', type:'registration' },
+  { date:'2026-09-07', label:'개교기념일(78주년)', type:'event' },
+  { date:'2026-09-08', label:'조기졸업 접수·학생 면담 주간 시작', type:'registration' },
+  { date:'2026-09-11', label:'조기졸업 접수 마감', type:'registration' },
+  { date:'2026-09-12', label:'[대학원] 2학기 외국어시험', type:'exam' },
+  { date:'2026-09-21', label:'수강철회 시작', type:'registration' },
+  { date:'2026-09-25', label:'수강철회 마감', type:'registration' },
+  { date:'2026-09-28', label:'중간 강의평가 시작', type:'exam' },
+
+  // ===== 10월 학사 =====
+  { date:'2026-10-02', label:'중간 강의평가 종료 / 제2차 모의토익시험', type:'exam' },
+  { date:'2026-10-03', label:'[대학원] 2학기 종합시험', type:'exam' },
+  { date:'2026-10-12', label:'[대학원] 2027학년도 전기 신·편입생 모집 시작', type:'event' },
+  { date:'2026-10-19', label:'[학부] 중간고사 시작', type:'exam' },
+  { date:'2026-10-23', label:'[학부] 중간고사 종료', type:'exam' },
+
+  // ===== 11월 학사 =====
+  { date:'2026-11-02', label:'[대학원] 지도교수 제청서 제출 시작', type:'registration' },
+  { date:'2026-11-06', label:'[대학원] 2027학년도 전기 신·편입생 모집 마감 / 지도교수 제청서 마감', type:'event' },
+  { date:'2026-11-23', label:'강의평가 시작', type:'exam' },
+  { date:'2026-11-24', label:'재수강신청원 제출 시작', type:'registration' },
+  { date:'2026-11-27', label:'재수강신청원 제출 마감', type:'registration' },
+  { date:'2026-11-30', label:'동계 계절수업 접수·조기복학 시작', type:'registration' },
+
+  // ===== 12월 학사 =====
+  { date:'2026-12-04', label:'강의평가 종료 / 동계 계절수업 접수 마감', type:'exam' },
+  { date:'2026-12-07', label:'기말고사 시작', type:'exam' },
+  { date:'2026-12-11', label:'[대학원] 석사·박사학위 청구논문 심사결과 제출마감', type:'exam' },
+  { date:'2026-12-14', label:'기말고사 종료', type:'exam' },
+  { date:'2026-12-15', label:'공휴일 수업보강 시작', type:'exam' },
+  { date:'2026-12-18', label:'공휴일 수업보강 종료', type:'exam' },
+  { date:'2026-12-21', label:'성적이의 신청 시작 / 동계 계절수업 시작', type:'registration' },
+  { date:'2026-12-25', label:'성적이의 신청 마감', type:'registration' },
+];
+
+const COLORS = {
+  registration: 'var(--c-registration)',
+  exam: 'var(--c-exam)',
+  vacation: 'var(--c-vacation)',
+  event: 'var(--c-event)',
+  holiday: 'var(--c-holiday)',
+};
+const LABELS = { registration:'수강신청', exam:'시험·평가', vacation:'방학', event:'행사', holiday:'공휴일' };
+const activeTypes = new Set(['registration','exam','vacation','event','holiday']);
+
+function ymd(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+const todayStr = ymd(new Date());
+
+function getEventsByDate() {
+  const map = {};
+  events.forEach(e => {
+    if (!activeTypes.has(e.type)) return;
+    if (!map[e.date]) map[e.date] = [];
+    map[e.date].push(e);
+  });
+  return map;
+}
+
+const semesters = [
+  { months: [[2026,1],[2026,2],[2026,3],[2026,4],[2026,5],[2026,6]] },
+  { months: [[2026,7],[2026,8],[2026,9],[2026,10],[2026,11],[2026,12]] },
+];
+const MONTH_KO = ['','1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+function buildMonthCard(year, month, evMap) {
+  const card = document.createElement('div');
+  card.className = 'month-card';
+  const hdr = document.createElement('div');
+  hdr.className = 'month-header';
+  hdr.innerHTML = `<span>${year}년 ${MONTH_KO[month]}</span><small>${year}.${String(month).padStart(2,'0')}</small>`;
+  card.appendChild(hdr);
+  const grid = document.createElement('div');
+  grid.className = 'cal-grid';
+  ['일','월','화','수','목','금','토'].forEach(d => {
+    const el = document.createElement('div'); el.className = 'cal-dow'; el.textContent = d; grid.appendChild(el);
+  });
+  const first = new Date(year, month-1, 1);
+  const lastDay = new Date(year, month, 0).getDate();
+  let dow = first.getDay();
+  for (let i = 0; i < dow; i++) {
+    const el = document.createElement('div'); el.className = 'cal-day empty'; grid.appendChild(el);
+  }
+  for (let d = 1; d <= lastDay; d++) {
+    const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dayDow = dow % 7;
+    const el = document.createElement('div');
+    el.className = 'cal-day' + (dayDow===0?' sun':dayDow===6?' sat':'') + (dateStr===todayStr?' today':'');
+    el.innerHTML = `<span class="num">${d}</span>`;
+    const dayEvents = evMap[dateStr] || [];
+    if (dayEvents.length) {
+      const dotsEl = document.createElement('div');
+      dotsEl.className = 'event-dots';
+      dayEvents.slice(0,4).forEach(ev => {
+        const dot = document.createElement('span');
+        dot.className = 'dot';
+        dot.style.background = COLORS[ev.type];
+        dotsEl.appendChild(dot);
+      });
+      el.appendChild(dotsEl);
+      el.title = dayEvents.map(e=>e.label).join('\n');
+    }
+    grid.appendChild(el);
+    dow++;
+  }
+  card.appendChild(grid);
+  return card;
+}
+
+function buildTable(semIdx) {
+  const evMap = getEventsByDate();
+  const sem = semesters[semIdx];
+  const allRows = [];
+  sem.months.forEach(([y,m]) => {
+    const last = new Date(y,m,0).getDate();
+    for (let d=1;d<=last;d++) {
+      const ds = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      if (evMap[ds]) evMap[ds].forEach(e => allRows.push({date:ds,...e}));
+    }
+  });
+  const tbody = document.getElementById(`table-${semIdx}`);
+  tbody.innerHTML = `<thead><tr><th>날짜</th><th>구분</th><th>일정</th></tr></thead>
+    <tbody>${allRows.length===0
+      ? '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--muted)">표시할 일정이 없습니다.</td></tr>'
+      : allRows.map(e=>`<tr>
+          <td style="white-space:nowrap;color:var(--muted)">${e.date}</td>
+          <td><span class="badge badge-${e.type}">${LABELS[e.type]}</span></td>
+          <td>${e.label}</td>
+        </tr>`).join('')}
+    </tbody>`;
+}
+
+function render() {
+  const evMap = getEventsByDate();
+  semesters.forEach((sem, idx) => {
+    const grid = document.getElementById(`grid-${idx}`);
+    grid.innerHTML = '';
+    sem.months.forEach(([y,m]) => grid.appendChild(buildMonthCard(y, m, evMap)));
+    buildTable(idx);
+  });
+}
+
+function switchTab(idx) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===idx));
+  document.querySelectorAll('.semester-panel').forEach((p,i) => p.classList.toggle('active', i===idx));
+}
+
+document.querySelectorAll('.legend-item').forEach(item => {
+  item.addEventListener('click', () => {
+    const t = item.dataset.type;
+    if (activeTypes.has(t)) { activeTypes.delete(t); item.classList.add('off'); }
+    else { activeTypes.add(t); item.classList.remove('off'); }
+    render();
+  });
+});
+
+render();
+</script>
+</body>
+</html>

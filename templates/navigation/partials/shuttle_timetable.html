@@ -1,0 +1,74 @@
+<div class="p-4">
+  <div class="flex gap-2 mb-4 flex-wrap">
+    {% for r in all_routes %}
+    <button
+      hx-get="/shuttle/timetable/?route_pk={{ r.pk }}&day_type={{ day_type }}"
+      hx-target="#route-result"
+      hx-swap="innerHTML"
+      class="px-3 py-1.5 text-sm rounded-lg border
+             {% if r.pk == route.pk %}bg-[#1B2A5E] text-white{% else %}bg-white text-gray-700 border-gray-300{% endif %}">
+      {{ r.name|truncatechars:12 }}
+    </button>
+    {% endfor %}
+  </div>
+
+  <div class="flex gap-2 mb-4">
+    <button
+      hx-get="/shuttle/timetable/?route_pk={{ route.pk }}&day_type=weekday"
+      hx-target="#route-result"
+      hx-swap="innerHTML"
+      class="px-3 py-1.5 text-sm rounded-lg border
+             {% if day_type == 'weekday' %}bg-[#0057A8] text-white{% else %}bg-white text-gray-700{% endif %}">
+      평일
+    </button>
+    <button
+      hx-get="/shuttle/timetable/?route_pk={{ route.pk }}&day_type=sunday"
+      hx-target="#route-result"
+      hx-swap="innerHTML"
+      class="px-3 py-1.5 text-sm rounded-lg border
+             {% if day_type == 'sunday' %}bg-[#0057A8] text-white{% else %}bg-white text-gray-700{% endif %}">
+      공휴일/방학
+    </button>
+  </div>
+
+  {% if schedules %}
+  <div class="overflow-y-auto max-h-64">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-gray-50 text-gray-600">
+          <th class="py-2 px-3 text-left">순번</th>
+          <th class="py-2 px-3 text-left">출발 시각</th>
+          <th class="py-2 px-3 text-left">비고</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in schedules %}
+        <tr class="border-t
+          {% if s.departure_time == next_departure %}
+            bg-[#dcfce7] text-[#16a34a] font-bold
+          {% else %}
+            hover:bg-gray-50
+          {% endif %}">
+          <td class="py-2 px-3">{{ forloop.counter }}</td>
+          <td class="py-2 px-3">
+            {{ s.departure_time|time:"H:i" }}
+            {% if s.departure_time == next_departure %}
+              <span class="text-xs ml-1">← 다음 출발</span>
+            {% endif %}
+          </td>
+          <td class="py-2 px-3 text-xs text-gray-400">
+            {% if s.departure_time >= "18:00" %}
+              ⚠ 단축 운행
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-center text-gray-500 py-6">해당 요일 운행 정보가 없습니다.</p>
+  {% endif %}
+
+  <p class="text-xs text-gray-400 mt-3">{{ route.description|truncatechars:80 }}</p>
+</div>

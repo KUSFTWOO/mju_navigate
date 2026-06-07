@@ -1,0 +1,35 @@
+{% extends 'admin_dashboard/base_admin.html' %}
+
+{% block admin_content %}
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-brand-700">일정 삭제</h1>
+</div>
+
+<div class="bg-white rounded-lg shadow p-6 max-w-lg">
+  <p class="text-gray-600 mb-6">
+    정말로 이 일정을 삭제하시겠습니까?
+  </p>
+  <p class="text-sm text-gray-500 mb-6">
+    <strong>{{ object.title }}</strong>
+    <br>
+    {% if object.start_date == object.end_date %}
+      {{ object.start_date|date:"Y년 m월 d일" }}
+    {% else %}
+      {{ object.start_date|date:"Y년 m월 d일" }} ~ {{ object.end_date|date:"m월 d일" }}
+    {% endif %}
+  </p>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="flex gap-3">
+      <button type="submit" class="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700">
+        삭제
+      </button>
+      <a href="{% url 'admin_dashboard:academic' %}" class="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300">
+        취소
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

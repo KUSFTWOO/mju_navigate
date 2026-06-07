@@ -1,0 +1,2 @@
+﻿-r base.txt
+sentry-sdk>=1.40.0

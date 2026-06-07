@@ -1,0 +1,21 @@
+<tr class="border-b border-gray-100 hover:bg-gray-50">
+  <td class="py-3 px-4">{{ user.email }}</td>
+  <td class="py-3 px-4">{{ user.profile.nickname|default:"설정 안 함" }}</td>
+  <td class="py-3 px-4">{{ user.profile.get_campus_display|default:"-" }}</td>
+  <td class="py-3 px-4">{{ user.date_joined|date:"Y-m-d" }}</td>
+  <td class="py-3 px-4">
+    {% if user.is_active %}
+      <span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded">활성</span>
+    {% else %}
+      <span class="px-2 py-1 bg-red-100 text-red-700 text-xs rounded">비활성</span>
+    {% endif %}
+  </td>
+  <td class="py-3 px-4 text-right">
+    <button hx-post="{% url 'admin_dashboard:user_toggle' user.pk %}"
+            hx-target="closest tr"
+            hx-swap="outerHTML"
+            class="px-3 py-1 text-xs font-medium {% if user.is_active %}bg-red-100 text-red-700 hover:bg-red-200{% else %}bg-green-100 text-green-700 hover:bg-green-200{% endif %} rounded">
+      {% if user.is_active %}비활성화{% else %}활성화{% endif %}
+    </button>
+  </td>
+</tr>

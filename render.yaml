@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: mju-navigate
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: DJANGO_SECRET_KEY
+        generateValue: true          # Render가 자동 생성
+      - key: DJANGO_ALLOWED_HOSTS
+        value: ""                    # RENDER_EXTERNAL_HOSTNAME이 자동 처리 (비워둬도 됨)
+      - key: DATABASE_URL
+        value: ""                    # Supabase URL 직접 입력
+      - key: KAKAO_API_KEY
+        value: ""                    # Kakao REST API 키
+      - key: KAKAO_JS_KEY
+        value: ""                    # Kakao JS 키
+      - key: ODSAY_API_KEY
+        value: ""                    # ODsay API 키
+      - key: SENTRY_DSN
+        value: ""                    # Sentry DSN (선택)
+      - key: EMAIL_HOST_USER
+        value: ""
+      - key: EMAIL_HOST_PASSWORD
+        value: ""
+      - key: DEFAULT_FROM_EMAIL
+        value: "noreply@mju-navigate.kr"
+      - key: PYTHON_VERSION
+        value: "3.11.0"

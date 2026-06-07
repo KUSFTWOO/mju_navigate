@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}학사일정 — MJU Navigate{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+
+  {# 페이지 헤더 #}
+  <div class="mb-5">
+    <h1 class="text-2xl font-bold text-brand-700 mb-1">📅 학사일정</h1>
+    <p class="text-gray-500 text-sm">
+      명지대학교 2026학년도 공식 학사일정 —
+      <a href="https://www.mju.ac.kr/mjukr/262/subview.do" target="_blank"
+         class="text-brand-500 hover:underline text-xs">공식 페이지 →</a>
+    </p>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+
+    {# ── 캠퍼스 필터 탭 ── #}
+    <div class="flex gap-2 mb-5 flex-wrap"
+         x-data="{ active: '{{ campus }}' }">
+
+      <button
+        x-bind:class="active==='all' ? 'bg-brand-500 text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+        @click="active='all'"
+        hx-get="{% url 'academic:event_list' %}?campus=all&year={{ year }}&month={{ month }}"
+        hx-target="#event-list"
+        hx-swap="innerHTML"
+        class="px-4 py-2 rounded-lg font-medium text-sm transition-colors">전체</button>
+
+      <button
+        x-bind:class="active==='seoul' ? 'bg-campus-seoul text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-[#eef0f8] hover:text-campus-seoul'"
+        @click="active='seoul'"
+        hx-get="{% url 'academic:event_list' %}?campus=seoul&year={{ year }}&month={{ month }}"
+        hx-target="#event-list"
+        hx-swap="innerHTML"
+        class="px-4 py-2 rounded-lg font-medium text-sm transition-colors">🏫 서울캠</button>
+
+      <button
+        x-bind:class="active==='yongin' ? 'bg-campus-yongin text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-[#E0EFFF] hover:text-campus-yongin'"
+        @click="active='yongin'"
+        hx-get="{% url 'academic:event_list' %}?campus=yongin&year={{ year }}&month={{ month }}"
+        hx-target="#event-list"
+        hx-swap="innerHTML"
+        class="px-4 py-2 rounded-lg font-medium text-sm transition-colors">🏭 용인캠</button>
+
+      <button
+        x-bind:class="active==='both' ? 'bg-gray-700 text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+        @click="active='both'"
+        hx-get="{% url 'academic:event_list' %}?campus=both&year={{ year }}&month={{ month }}"
+        hx-target="#event-list"
+        hx-swap="innerHTML"
+        class="px-4 py-2 rounded-lg font-medium text-sm transition-colors">🎓 공통</button>
+
+    </div>
+
+    {# ── 달력 + 이벤트 목록 (HTMX 타깃) ── #}
+    <div id="event-list">
+      {% include 'academic/partials/event_list.html' %}
+    </div>
+
+  </div>
+</div>
+
+{# 이벤트 상세 모달 컨테이너 #}
+<div id="modal-container"></div>
+{% endblock %}

@@ -1,0 +1,46 @@
+# ── Python ──────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── 가상환경 ─────────────────────────────────────
+venv/
+.venv/
+env/
+.env.local
+ENV/
+
+# ── 환경변수 (절대 커밋 금지) ──────────────────────
+.env
+.env.*
+!.env.example      # 예시 파일만 허용
+
+# ── Django ───────────────────────────────────────
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+media/
+*.log
+
+# ── 로컬 개발 파일 ──────────────────────────────
+logs/
+*.md
+!README.md
+!docs/*.md
+
+# ── IDE / OS ─────────────────────────────────────
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+Thumbs.db
+
+# ── Render / Deployment ──────────────────────────
+.render/

@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}이메일 인증 — MJU Navigate{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto mt-8">
+  <div class="bg-white rounded-lg shadow-md p-8">
+    <div class="text-center mb-6">
+      <span class="text-4xl">✉️</span>
+    </div>
+
+    <h1 class="text-2xl font-bold text-gray-900 mb-4 text-center">이메일 확인</h1>
+
+    {% if confirmation %}
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <p class="text-blue-900 text-sm">
+          <strong>{{ confirmation.email_address.email }}</strong> 주소로 인증 링크를 보냈습니다.
+        </p>
+      </div>
+
+      <form method="post" class="space-y-4">
+        {% csrf_token %}
+
+        <p class="text-gray-700 text-sm">
+          이메일을 확인하고 인증 링크를 클릭하여 계정을 활성화하세요.
+        </p>
+
+        <div class="bg-gray-50 rounded-lg p-4">
+          <p class="text-gray-600 text-xs">
+            <strong>인증 링크를 받지 못하셨나요?</strong><br/>
+            스팸 폴더를 확인하거나 아래 버튼을 클릭하세요.
+          </p>
+        </div>
+
+        <button
+          type="submit"
+          name="action_send"
+          class="w-full py-2 bg-brand-500 text-white font-medium rounded-lg hover:bg-brand-600 transition-colors"
+        >
+          인증 이메일 재전송
+        </button>
+      </form>
+
+      <div class="mt-6 text-center">
+        <a href="{% url 'navigation:index' %}" class="text-brand-500 font-semibold hover:underline text-sm">
+          ← 메인 페이지로
+        </a>
+      </div>
+
+    {% else %}
+      <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+        <p class="text-green-900 text-sm">
+          <strong>✅ 이메일이 확인되었습니다!</strong><br/>
+          계정이 활성화되었습니다.
+        </p>
+      </div>
+
+      <a
+        href="{% url 'accounts:profile' %}"
+        class="block w-full py-2 bg-brand-500 text-white font-medium rounded-lg hover:bg-brand-600 transition-colors text-center"
+      >
+        프로필 설정
+      </a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

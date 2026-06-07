@@ -1,0 +1,62 @@
+{% extends 'admin_dashboard/base_admin.html' %}
+
+{% block admin_content %}
+<div class="mb-6 flex items-center justify-between">
+  <div>
+    <h1 class="text-3xl font-bold text-brand-700">학사일정 관리</h1>
+    <p class="text-gray-600 mt-1">학사일정 추가, 수정, 삭제</p>
+  </div>
+  <a href="{% url 'admin_dashboard:academic_create' %}"
+     class="px-4 py-2 bg-brand-500 text-white font-medium rounded-lg hover:bg-brand-600">
+    + 일정 추가
+  </a>
+</div>
+
+<div class="bg-white rounded-lg shadow p-6">
+  {% if events %}
+    <table class="w-full text-sm">
+      <thead class="border-b border-gray-200">
+        <tr>
+          <th class="text-left py-3 px-4">제목</th>
+          <th class="text-left py-3 px-4">기간</th>
+          <th class="text-left py-3 px-4">캠퍼스</th>
+          <th class="text-left py-3 px-4">유형</th>
+          <th class="text-right py-3 px-4">작업</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for event in events %}
+          <tr class="border-b border-gray-100 hover:bg-gray-50">
+            <td class="py-3 px-4 font-medium">{{ event.title }}</td>
+            <td class="py-3 px-4 text-xs">
+              {% if event.start_date == event.end_date %}
+                {{ event.start_date|date:"Y.m.d" }}
+              {% else %}
+                {{ event.start_date|date:"Y.m.d" }} ~ {{ event.end_date|date:"m.d" }}
+              {% endif %}
+            </td>
+            <td class="py-3 px-4">
+              <span class="px-2 py-1 text-xs rounded {% if event.campus == 'seoul' %}bg-[#eef0f8] text-campus-seoul{% elif event.campus == 'yongin' %}bg-[#E0EFFF] text-campus-yongin{% else %}bg-gray-100 text-gray-700{% endif %}">
+                {{ event.get_campus_display }}
+              </span>
+            </td>
+            <td class="py-3 px-4">
+              <span class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-700">
+                {{ event.get_event_type_display }}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-right">
+              <a href="{% url 'admin_dashboard:academic_edit' event.pk %}"
+                 class="text-blue-600 hover:underline mr-3">수정</a>
+              <a href="{% url 'admin_dashboard:academic_delete' event.pk %}"
+                 class="text-red-600 hover:underline">삭제</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="text-gray-500 text-center py-8">등록된 일정이 없습니다.</p>
+  {% endif %}
+</div>
+{% endblock %}

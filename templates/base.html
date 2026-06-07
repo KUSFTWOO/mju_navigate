@@ -1,0 +1,105 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}MJU Navigate{% endblock %}</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>🏫</text></svg>"
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50:  '#eef0f8',
+              100: '#d4d8ef',
+              500: '#1B2A5E',   /* Pantone 2768 C — 서울캠 · 메인 브랜드 */
+              600: '#152249',
+              700: '#0f1a37',
+            },
+            campus: {
+              seoul:        '#1B2A5E',   /* Pantone 2768 C */
+              'seoul-bg':   '#eef0f8',
+              yongin:       '#0057A8',   /* Pantone 300 C */
+              'yongin-bg':  '#E0EFFF',
+            },
+            shuttle: {
+              DEFAULT: '#16a34a',
+              light:   '#dcfce7',
+            },
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- CSRF → HTMX 자동 삽입 -->
+  <meta name="csrf-token" content="{{ csrf_token }}">
+
+  <!-- HTMX -->
+  <script src="https://unpkg.com/htmx.org@2.0.0" defer></script>
+  <!-- Alpine.js (탭·드롭다운 등 최소 UI 상태) -->
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <!-- Kakao Maps SDK (지도 렌더링, JS 키 필요) -->
+  <script type="text/javascript"
+    src="//dapi.kakao.com/v2/maps/sdk.js?appkey={{ KAKAO_JS_KEY }}&libraries=services"></script>
+
+  <!-- 셔틀버스 도로 경로 좌표 (Kakao Navi API 추출) -->
+  <script src="{% static 'js/shuttleRoute.js' %}"></script>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+  <!-- 상단 헤더 (Pantone 2768 C) -->
+  <header class="bg-brand-500 text-white shadow-sm">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="{% url 'navigation:index' %}" class="font-bold text-lg">🏫 MJU Navigate</a>
+      <nav class="hidden md:flex gap-6 text-sm">
+        <a href="{% url 'navigation:index' %}"   class="hover:text-brand-100">길찾기</a>
+        <a href="{% url 'academic:index' %}"     class="hover:text-brand-100">학사일정</a>
+        <a href="{% url 'restaurants:index' %}"  class="hover:text-brand-100">음식점</a>
+        {% if user.is_authenticated %}
+          <a href="{% url 'accounts:profile' %}" class="hover:text-brand-100">프로필</a>
+        {% else %}
+          <a href="{% url 'account_login' %}"    class="hover:text-brand-100">로그인</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <!-- 메인 콘텐츠 -->
+  <main class="max-w-5xl mx-auto px-4 py-6">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- 모바일 하단 탭 바 -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden z-50">
+    <div class="flex">
+      <a href="{% url 'navigation:index' %}"  class="flex-1 flex flex-col items-center py-2 text-xs text-brand-500">
+        <span class="text-lg">🗺️</span>길찾기
+      </a>
+      <a href="{% url 'academic:index' %}"    class="flex-1 flex flex-col items-center py-2 text-xs text-gray-500">
+        <span class="text-lg">📅</span>학사일정
+      </a>
+      <a href="{% url 'restaurants:index' %}" class="flex-1 flex flex-col items-center py-2 text-xs text-gray-500">
+        <span class="text-lg">🍜</span>음식점
+      </a>
+      <a href="{% url 'accounts:profile' %}"  class="flex-1 flex flex-col items-center py-2 text-xs text-gray-500">
+        <span class="text-lg">👤</span>프로필
+      </a>
+    </div>
+  </nav>
+
+  <!-- HTMX CSRF 자동 삽입 스크립트 -->
+  <script>
+    document.addEventListener('htmx:configRequest', (e) => {
+      e.detail.headers['X-CSRFToken'] =
+        document.querySelector('meta[name="csrf-token"]').content;
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,6 @@
+﻿-r base.txt
+pytest-django>=4.8.0
+factory-boy>=3.3.0
+responses>=0.25.0
+freezegun>=1.4.0
+django-debug-toolbar>=4.3.0

@@ -1,0 +1,64 @@
+{% extends 'admin_dashboard/base_admin.html' %}
+
+{% block admin_content %}
+<div class="mb-6 flex items-center justify-between">
+  <div>
+    <h1 class="text-3xl font-bold text-brand-700">셔틀 시간표 관리</h1>
+    <p class="text-gray-600 mt-1">노선별 운행 시간 관리</p>
+  </div>
+  <a href="{% url 'admin_dashboard:shuttle_create' %}"
+     class="px-4 py-2 bg-brand-500 text-white font-medium rounded-lg hover:bg-brand-600">
+    + 새 시간 추가
+  </a>
+</div>
+
+<div class="bg-white rounded-lg shadow p-6">
+  {% if routes %}
+    {% for route in routes %}
+      <div class="mb-8">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">
+          {{ route.get_origin_display }} → {{ route.get_destination_display }}
+        </h3>
+
+        {% if route.schedules.all %}
+          <table class="w-full text-sm">
+            <thead class="border-b border-gray-200">
+              <tr>
+                <th class="text-left py-3 px-4">출발 시각</th>
+                <th class="text-left py-3 px-4">운행 유형</th>
+                <th class="text-left py-3 px-4">활성 여부</th>
+                <th class="text-right py-3 px-4">작업</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for schedule in route.schedules.all %}
+                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                  <td class="py-3 px-4 font-medium">{{ schedule.departure_time }}</td>
+                  <td class="py-3 px-4">{{ schedule.get_day_type_display }}</td>
+                  <td class="py-3 px-4">
+                    {% if schedule.is_active %}
+                      <span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded">운영 중</span>
+                    {% else %}
+                      <span class="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">중지됨</span>
+                    {% endif %}
+                  </td>
+                  <td class="py-3 px-4 text-right">
+                    <a href="{% url 'admin_dashboard:shuttle_edit' schedule.pk %}"
+                       class="text-blue-600 hover:underline mr-3">수정</a>
+                    <a href="{% url 'admin_dashboard:shuttle_delete' schedule.pk %}"
+                       class="text-red-600 hover:underline">삭제</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p class="text-gray-500 text-sm">시간표가 없습니다.</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="text-gray-500 text-center py-8">노선이 없습니다.</p>
+  {% endif %}
+</div>
+{% endblock %}

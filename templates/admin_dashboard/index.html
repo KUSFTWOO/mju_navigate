@@ -1,0 +1,63 @@
+{% extends 'admin_dashboard/base_admin.html' %}
+
+{% block admin_content %}
+<div class="mb-6">
+  <h1 class="text-3xl font-bold text-brand-700">대시보드</h1>
+  <p class="text-gray-600 mt-1">시스템 통계 및 최근 활동</p>
+</div>
+
+<!-- 통계 카드 -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+  <!-- 총 회원 수 -->
+  <div class="bg-white rounded-lg shadow border-t-4 border-brand-500 p-6">
+    <h3 class="text-sm font-semibold text-gray-600 mb-2">총 활성 회원</h3>
+    <p class="text-3xl font-bold text-brand-500">{{ total_users }}</p>
+  </div>
+
+  <!-- 오늘 셔틀 운행 -->
+  <div class="bg-white rounded-lg shadow border-t-4 border-shuttle p-6">
+    <h3 class="text-sm font-semibold text-gray-600 mb-2">오늘 셔틀 운행</h3>
+    <p class="text-3xl font-bold text-shuttle">{{ today_shuttles }}</p>
+  </div>
+
+  <!-- 예정 이벤트 -->
+  <div class="bg-white rounded-lg shadow border-t-4 border-blue-500 p-6">
+    <h3 class="text-sm font-semibold text-gray-600 mb-2">예정 일정 (3건)</h3>
+    <p class="text-3xl font-bold text-blue-500">{{ upcoming_events|length }}</p>
+  </div>
+
+  <!-- 최근 가입 -->
+  <div class="bg-white rounded-lg shadow border-t-4 border-green-500 p-6">
+    <h3 class="text-sm font-semibold text-gray-600 mb-2">최근 가입자</h3>
+    <p class="text-3xl font-bold text-green-500">{{ recent_users|length }}</p>
+  </div>
+</div>
+
+<!-- 최근 가입자 -->
+<div class="bg-white rounded-lg shadow p-6">
+  <h2 class="text-xl font-bold text-gray-900 mb-4">최근 가입 회원</h2>
+
+  {% if recent_users %}
+    <table class="w-full text-sm">
+      <thead class="border-b border-gray-200">
+        <tr>
+          <th class="text-left py-3 px-4">이메일</th>
+          <th class="text-left py-3 px-4">닉네임</th>
+          <th class="text-left py-3 px-4">가입일</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in recent_users %}
+          <tr class="border-b border-gray-100 hover:bg-gray-50">
+            <td class="py-3 px-4">{{ user.email }}</td>
+            <td class="py-3 px-4">{{ user.profile.nickname|default:"설정 안 함" }}</td>
+            <td class="py-3 px-4">{{ user.date_joined|date:"Y-m-d" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="text-gray-500 text-center py-8">가입한 회원이 없습니다.</p>
+  {% endif %}
+</div>
+{% endblock %}
