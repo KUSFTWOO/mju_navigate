@@ -110,16 +110,19 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'          # collectstatic 출력 디렉토리
+STATICFILES_DIRS = [BASE_DIR / 'static']        # 소스 정적파일 디렉토리
 
-# 운영 환경(DEBUG=False)에서만 STATIC_ROOT와 WhiteNoise 사용
-STATICFILES_DIRS = [BASE_DIR / 'static']
-
-if not DEBUG:
-    STATIC_ROOT = BASE_DIR / 'staticfiles'
-    # CompressedManifestStaticFilesStorage는 파일명에 해시를 붙여 저장하므로
-    # 하드코딩된 경로(/static/js/maps.js)로 참조하는 파일이 404 발생.
-    # CompressedStaticFilesStorage는 파일명 변경 없이 압축만 하므로 안전함.
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+# Django 4.2+ 권장 방식 (STATICFILES_STORAGE deprecated)
+# WhiteNoise: 파일명 변경 없이 gzip 압축만 적용 → /static/js/maps.js 그대로 서빙
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+    },
+}
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
