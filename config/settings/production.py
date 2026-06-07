@@ -1,27 +1,19 @@
-import environ
+import os
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
 
 from .base import *  # noqa: F401, F403
 
-env = environ.Env()
+# ── CSRF_TRUSTED_ORIGINS ───────────────────────────────────────
+# base.py에서 ALLOWED_HOSTS 설정이 완료되었으므로,
+# CSRF_TRUSTED_ORIGINS를 HTTPS 도메인으로 구성
+_render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME', '')
+_extra_hosts = os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if 'DJANGO_ALLOWED_HOSTS' in os.environ else []
 
-DEBUG = False
-
-# ── ALLOWED_HOSTS ──────────────────────────────────────────────
-# Render는 *.onrender.com 도메인을 자동 할당함
-_render_host = env('RENDER_EXTERNAL_HOSTNAME', default='')
-_extra_hosts  = env.list('DJANGO_ALLOWED_HOSTS', default=[])
-
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+CSRF_TRUSTED_ORIGINS = []
 if _render_host:
-    ALLOWED_HOSTS.append(_render_host)
-ALLOWED_HOSTS += _extra_hosts
-
-# ── DATABASE ───────────────────────────────────────────────────
-DATABASES = {
-    'default': env.db('DATABASE_URL')
-}
+    CSRF_TRUSTED_ORIGINS.append(f'https://{_render_host}')
+CSRF_TRUSTED_ORIGINS += [f'https://{h.strip()}' for h in _extra_hosts if h.strip()]
 
 # ── HTTPS / SECURITY ───────────────────────────────────────────
 # Render 프록시가 SSL을 처리하므로 앱 서버에서는 리디렉션하지 않음.
@@ -35,14 +27,11 @@ SECURE_HSTS_PRELOAD = True
 
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
-CSRF_TRUSTED_ORIGINS = [
-    f'https://{_render_host}',
-] + [f'https://{h}' for h in _extra_hosts if h]
 X_FRAME_OPTIONS = 'DENY'
 
 # ── SENTRY ─────────────────────────────────────────────────────
 # sentry_sdk는 Django 앱이 아니므로 INSTALLED_APPS에 추가하지 않음
-_sentry_dsn = env('SENTRY_DSN', default='')
+_sentry_dsn = os.environ.get('SENTRY_DSN', '')
 if _sentry_dsn:
     sentry_sdk.init(
         dsn=_sentry_dsn,

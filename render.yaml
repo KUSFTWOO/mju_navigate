@@ -1,31 +1,25 @@
 services:
+  # ─────────────────────────────────────────────────────────────
+  # 웹 서비스 (Django + Gunicorn)
+  # ─────────────────────────────────────────────────────────────
   - type: web
-    name: mju-navigate
-    runtime: python
-    buildCommand: "./build.sh"
-    startCommand: "gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
+    name: community-web
+    env: python
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+    startCommand: gunicorn config.wsgi:application
     envVars:
-      - key: DJANGO_SETTINGS_MODULE
-        value: config.settings.production
-      - key: DJANGO_SECRET_KEY
-        generateValue: true          # Render가 자동 생성
-      - key: DJANGO_ALLOWED_HOSTS
-        value: ""                    # RENDER_EXTERNAL_HOSTNAME이 자동 처리 (비워둬도 됨)
       - key: DATABASE_URL
-        value: ""                    # Supabase URL 직접 입력
-      - key: KAKAO_API_KEY
-        value: ""                    # Kakao REST API 키
-      - key: KAKAO_JS_KEY
-        value: ""                    # Kakao JS 키
-      - key: ODSAY_API_KEY
-        value: ""                    # ODsay API 키
-      - key: SENTRY_DSN
-        value: ""                    # Sentry DSN (선택)
-      - key: EMAIL_HOST_USER
-        value: ""
-      - key: EMAIL_HOST_PASSWORD
-        value: ""
-      - key: DEFAULT_FROM_EMAIL
-        value: "noreply@mju-navigate.kr"
-      - key: PYTHON_VERSION
-        value: "3.11.0"
+        fromDatabase:
+          name: community-db
+          property: connectionString
+      - key: SECRET_KEY
+        value: "b3c6d8e9f0g1h2i3j4k5l6m7n8o9p0q1r2s3t4u5v6w7x8y9z0a1b2c3d4e5f6"
+
+  # ─────────────────────────────────────────────────────────────
+  # PostgreSQL 데이터베이스 (Free 플랜)
+  # ─────────────────────────────────────────────────────────────
+  - type: pserv
+    name: community-db
+    ipAddress: private
+    plan: free
+    postgresVersion: 15
