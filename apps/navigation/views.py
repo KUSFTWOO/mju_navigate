@@ -104,24 +104,10 @@ class NavigationView(TemplateView):
         except Exception as e:
             logger.warning(f'타임카드 조회 오류: {str(e)}')
 
-        # 캠퍼스 좌표 업데이트 (Geocoding)
-        campus_coords = {}
-        for code, location in CAMPUS_COORDS.items():
-            coords = get_coordinates_from_address(location['address'])
-            if coords:
-                campus_coords[code] = {
-                    'lat': coords['lat'],
-                    'lng': coords['lng'],
-                    'name': location['name'],
-                    'building': location['building'],
-                    'address': location['address']
-                }
-            else:
-                # Geocoding 실패 시 기본값 사용
-                campus_coords[code] = location
-
-        context['campus_coords'] = campus_coords
-        context['campus_coords_json'] = json.dumps(campus_coords)
+        # 캠퍼스 좌표: services.py에 정밀 좌표가 이미 하드코딩되어 있음.
+        # 매 요청마다 Kakao Geocoding API를 호출할 필요 없음 → 제거.
+        context['campus_coords'] = CAMPUS_COORDS
+        context['campus_coords_json'] = json.dumps(CAMPUS_COORDS)
         return context
 
 

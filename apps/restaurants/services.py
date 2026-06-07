@@ -19,6 +19,12 @@ CAMPUS_LOCATIONS = {
     },
 }
 
+# 캠퍼스 정밀 좌표 (Kakao Geocoding 불필요, 하드코딩)
+CAMPUS_COORDS = {
+    'seoul': {'lat': 37.5803770223812, 'lng': 126.921348530876},
+    'yongin': {'lat': 37.2218072639192, 'lng': 127.190183727516},
+}
+
 CATEGORY_KEYWORDS = {
     'all': '음식점',
     'korean': '한식당',

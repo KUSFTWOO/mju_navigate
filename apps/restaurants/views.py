@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.views.generic import TemplateView, View
 from django.http import JsonResponse
 import json
-from .services import get_nearby_restaurants, get_coordinates_from_address, CAMPUS_LOCATIONS, CATEGORY_NAMES
+from .services import get_nearby_restaurants, CAMPUS_LOCATIONS, CAMPUS_COORDS, CATEGORY_NAMES
 
 
 class RestaurantView(TemplateView):
@@ -11,15 +11,9 @@ class RestaurantView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # 캠퍼스 목록 (좌표 정보 포함)
-        campus_coords = {}
-        for code, location in CAMPUS_LOCATIONS.items():
-            coords = get_coordinates_from_address(location['address'])
-            if coords:
-                campus_coords[code] = coords
-            else:
-                # Geocoding 실패 시 기본값
-                campus_coords[code] = {'lat': 0, 'lng': 0}
+        # 캠퍼스 좌표: 하드코딩 값 직접 사용 (Geocoding API 호출 불필요)
+        campus_coords = {code: {'lat': v['lat'], 'lng': v['lng']}
+                         for code, v in CAMPUS_COORDS.items()}
 
         campus_list = [
             {'code': 'seoul', 'name': '🏫 서울캠퍼스'},
