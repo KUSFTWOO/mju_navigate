@@ -112,12 +112,14 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 # 운영 환경(DEBUG=False)에서만 STATIC_ROOT와 WhiteNoise 사용
+STATICFILES_DIRS = [BASE_DIR / 'static']
+
 if not DEBUG:
     STATIC_ROOT = BASE_DIR / 'staticfiles'
-    STATICFILES_DIRS = [BASE_DIR / 'static']
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-else:
-    STATICFILES_DIRS = [BASE_DIR / 'static']
+    # CompressedManifestStaticFilesStorage는 파일명에 해시를 붙여 저장하므로
+    # 하드코딩된 경로(/static/js/maps.js)로 참조하는 파일이 404 발생.
+    # CompressedStaticFilesStorage는 파일명 변경 없이 압축만 하므로 안전함.
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
