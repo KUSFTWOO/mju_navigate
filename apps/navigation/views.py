@@ -458,7 +458,7 @@ class ShuttleView(View):
 class ShuttleTimetableView(View):
     """셔틀버스 시간표 조회"""
     def get(self, request):
-        route_pk = request.GET.get('route_pk', '1')
+        route_pk = request.GET.get('route_pk', '2')
         day_type = request.GET.get('day_type', 'weekday')
 
         try:
