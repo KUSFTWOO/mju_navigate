@@ -14,8 +14,9 @@ if _env_file.exists():
 
 SECRET_KEY = env('DJANGO_SECRET_KEY', default='django-insecure-dev-key-change-in-production')
 
-# DEBUG 모드: 'RENDER' 환경변수가 있으면 False (운영), 없으면 True (개발)
-DEBUG = 'RENDER' not in os.environ
+# DEBUG 모드: RENDER_EXTERNAL_HOSTNAME이 있으면 False (운영), 없으면 True (로컬 개발)
+# Render에서는 자동으로 RENDER_EXTERNAL_HOSTNAME을 주입함
+DEBUG = 'RENDER_EXTERNAL_HOSTNAME' not in os.environ
 
 # ALLOWED_HOSTS: Render 자동 감지 및 환경변수로 추가 호스트 허용
 ALLOWED_HOSTS = env.list('DJANGO_ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])

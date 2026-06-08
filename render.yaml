@@ -8,30 +8,31 @@ services:
     plan: free
     buildCommand: >-
       pip install -r requirements.txt &&
-      python manage.py collectstatic --noinput &&
+      python manage.py collectstatic --noinput --verbosity 2 &&
       python manage.py migrate --run-syncdb &&
-      python manage.py loaddata apps/academic/fixtures/sample_events.json || true &&
-      python manage.py loaddata apps/navigation/fixtures/shuttle_data_2026_spring.json || true
+      (python manage.py loaddata apps/academic/fixtures/sample_events.json || true) &&
+      (python manage.py loaddata apps/navigation/fixtures/shuttle_data_2026_spring.json || true)
     startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120
     envVars:
-      - key: PYTHON_VERSION
-        value: "3.12.0"
       - key: DJANGO_SETTINGS_MODULE
         value: config.settings.production
       - key: DJANGO_SECRET_KEY
-        generateValue: true
+        value: "mju-navigate-prod-key-2026-change-this-in-render-dashboard-very-important-security"
       - key: DATABASE_URL
-        sync: false        # 대시보드에서 Supabase URL 또는 기존 Render DB URL 직접 입력
+        value: ""  # Render 대시보드에서 직접 설정 (PostgreSQL 또는 Supabase)
+      - key: PYTHON_VERSION
+        value: "3.12.0"
       - key: KAKAO_API_KEY
-        sync: false
+        value: ""  # 대시보드에서 설정
       - key: KAKAO_JS_KEY
-        sync: false
+        value: ""  # 대시보드에서 설정
       - key: ODSAY_API_KEY
-        sync: false
+        value: ""  # 대시보드에서 설정
       - key: SENTRY_DSN
         value: ""
 
-  # ── PostgreSQL 블록 제거 ──────────────────────────────────────
+  # ── PostgreSQL 데이터베이스 설정 ────────────────────────────────
+  # 선택사항: Render free PostgreSQL 또는 외부 DB 사용
   # Render 무료 플랜은 계정당 DB 1개 제한.
   # 기존 DB(Render 또는 Supabase)의 연결 URL을
   # DATABASE_URL 환경변수에 직접 입력하세요.
